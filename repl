@@ -1,0 +1,152 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
+
+require 'socket'
+require 'vsx'
+
+@raw_buffer = ""
+@cmd_buffer = [ ]
+
+# hodge podge we'll send all at once:
+
+REPORT = [ '?P', '?M', '?F', '?AST', '?V', '?FR', '?VST', '?FL', '?L', '?S' ].join("\r\n")
+
+def repl_prompt
+  STDOUT.write 'cmd> '
+  STDOUT.flush
+end
+
+def repl_print *texts
+  STDOUT.write texts.join("\n") + "\n"
+  STDOUT.flush
+end
+
+def send_vsx_request str
+  @vsx.write str + "\r\n"
+end
+
+def parse_buffer
+  if @raw_buffer =~ /^(.*\r\n)(.*)$/m   # check for all completed input (ends with CRLF, aka \r\n)
+    @raw_buffer = $2                    # save partial response for later
+    return $1.split(/\r\n/)             # get all the completed responses broken out
+  else
+    return nil
+  end
+end
+
+def decode_response response
+  case response
+  when "B00"               : "VSX busy - retry presently"  # error responses
+  when "E04"               : "Bad command code"
+  when "E06"               : "Bad command parameter"
+  when "MUT0"              : "VSX is muted"                # in response to command '?M'
+  when "MUT1"              : "VSX is not muted"
+  when "PWR0"              : "VSX is powered up"           # in response to command '?P'
+  when "PWR1"              : "VSX is not powered ip"
+  when "R"                 : "VSX OK"                      # response to bare CRLF
+  when /^AST[0-9]{43}$/    : "Audio input: " + decode_audio_signal_info(response)                            # '?AST'
+  when /^FL[0-9A-F]{30}$/  : "Front Display:  '" + decode_fl_display(response) + "'"                         # '?FL'
+  when /^FN(\d\d)$/        : "Currently taking input from " + decode_input_device(response)  + " device"     # '?F'
+  when /^FR[AF](\d+)$/     : "Tuner set to " + decode_tuner_setting(response)                                # '?FR"
+  when /^LM[0-9a-f]{4}$/   : "Playing listening mode: " + decode_listening_mode(response)                    # '?L'
+  when /^SR\d{4}$/         : "Listening setting: " + decode_listening_setting(response)                      # '?S'
+  when /^VOL(\d+)$/        : "Audio volume at " + decode_audio_level(response)                               # '?V'
+  when /^VST\d{29}$/       : "Video input: " + decode_video_signal_info(response)                            # '?VST'
+  else
+    response
+  end
+end
+
+
+# repl_read
+# read from VSX receiver and command prompt on STDIN. VSX receiver wins if both available at once.
+
+def repl_read
+  # We might have had reads on both STDIN and the VSX socket
+  # simultaneously.  If that were the case, we'd have sent the VSX
+  # output preferentially, but we'd still have something on command
+  # input.
+
+  return :cmd, @cmd_buffer.shift unless @cmd_buffer.empty?      # TODO: we probably ought to return entire array of these, in unlikely event we have more than one
+
+  # It's possible we get partial reads as well; then we send :nada
+  # And if we ever read EOF on STDIN, we immediately bail.
+
+  results = select([ @vsx, STDIN ], nil, nil)
+
+  responses = nil
+  if results[0].include? @vsx
+    @raw_buffer += @vsx.recv(4 * 1024)
+    responses = parse_buffer                # handle fragmentary reads
+  end
+
+  if results[0].include? STDIN
+    cmd = STDIN.gets                        # let stdio handle this
+    return :eof if cmd.nil?
+    cmd.strip!
+    cmd = REPORT if cmd == 'report'         # rude beginnings of a command shell 
+    @cmd_buffer.push cmd
+  end
+
+  return :vsx, responses if responses
+  return :cmd, @cmd_buffer.shift unless @cmd_buffer.empty?
+  return :nada  # NO-OP - results in fall-thru in main repl loop
+end
+
+
+# TODO: handle connection timeout/reset, no address, unreachable.
+# TODO: graceful handling of interrupts
+
+error_count = 0
+
+HOSTNAME = "vsx.sacred.net"
+
+begin
+  @vsx = TCPSocket::new(HOSTNAME, 23)
+
+  send_vsx_request('')   # recommended in tech notes - 100 ms before they guarentee attention is acquired. Use bare CRLF.
+  sleep 0.1
+
+  send_vsx_request(REPORT)
+  sleep 0.5  # often need as much as half a second for VSX to fully respond to entire set of commands in REPORT string, improves printing to screen this way.
+
+  while true
+    type, data = repl_read
+    case type
+    when :vsx
+      data.each { |vsx_response| repl_print(decode_response(vsx_response)) }
+      repl_prompt
+    when :cmd
+      send_vsx_request data
+    when :eof
+      repl_print '', 'goodbye'
+      exit 0
+    end
+    sleep 0.1  # lends to readability
+  end
+
+rescue SocketError => e
+  STDERR.puts "Can't locate VSX receiver named #{HOSTNAME}, #{e.message}."
+  exit -1
+
+rescue Errno::ECONNREFUSED => e
+  error_count += 1
+  if error_count > 3
+    STDERR.puts "Can't connect after 3 trys, giving up."
+    exit -1
+  end
+  STDERR.puts "Connection refused by #{HOSTNAME}, will rety in 5 seconds."
+  sleep 5
+  retry  
+
+rescue => e
+  STDERR.puts "Fatal error '#{e.message}' (#{e.class}), giving up."
+  exit -1
+end
+
+
+# next interesting (?) codes:
+# VTA - Video parameter - prohibition information ?!
+
