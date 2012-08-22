@@ -35,7 +35,7 @@ def decode_audio_signal_info response
                  when '26': 'DTS-HD High Resolution'
                  when '27': 'DTS-HD Master Audio'
                  else
-                   "Uknown (code #{response[3..4]})"
+                   "signal code #{response[3..4]}"
                  end
 
   input_frequency = case response[5..6]
@@ -47,10 +47,13 @@ def decode_audio_signal_info response
                     when '05': '176.4 kHz'
                     when '06': '192 kHz'
                     else
-                      "Uknown (code #{response[5..6]})"
+                      "frequency code #{response[5..6]}"
                     end
 
+  # report input channels (often not available)
+
   list = []
+
   list.push('L')   if response[7..7]   == '1'  # Left
   list.push('C')   if response[8..8]   == '1'  # Center
   list.push('R')   if response[9..9]   == '1'  # Right
@@ -67,27 +70,32 @@ def decode_audio_signal_info response
   list.push('XL')  if response[20..20] == '1'  # Extra Left?
   list.push('XC')  if response[21..21] == '1'  # Extra Center?
   list.push('XR')  if response[22..22] == '1'  # Extra Right?
-                                               # 23..27 reserved 
+
+  # response data 23..27 are reserved 
+
   input_channels = list.join(',')
 
+  # Report output channels:
 
   list = []
-  list.push('L')    if response[28..28] == '1'
-  list.push('C')    if response[29..29] == '1'
-  list.push('R')    if response[30..30] == '1'
-  list.push('SL')   if response[31..31] == '1'
-  list.push('SR')   if response[32..32] == '1'
-  list.push('SBL')  if response[33..33] == '1'
-  list.push('SB')   if response[34..34] == '1'
-  list.push('SBR')  if response[35..35] == '1'
-  list.push('SW')   if response[36..36] == '1'
-  list.push('FHL')  if response[37..37] == '1'
-  list.push('FHR')  if response[38..38] == '1'
-  list.push('FWL')  if response[39..39] == '1'
-  list.push('FWR')  if response[40..40] == '1'  # rest reserved
+
+  list.push('L')    if response[28..28] == '1'  # Left
+  list.push('C')    if response[29..29] == '1'  # Center
+  list.push('R')    if response[30..30] == '1'  # Right
+  list.push('SL')   if response[31..31] == '1'  # Left Surround
+  list.push('SR')   if response[32..32] == '1'  # Right Surround
+  list.push('SBL')  if response[33..33] == '1'  # Left Surround Back
+  list.push('SB')   if response[34..34] == '1'  # Surround Back (in lieu of SBL & SBR)
+  list.push('SBR')  if response[35..35] == '1'  # Right Surround Back
+  list.push('SW')   if response[36..36] == '1'  # Subwoofer
+  list.push('FHL')  if response[37..37] == '1'  # Front High Left
+  list.push('FHR')  if response[38..38] == '1'  # Front High Right
+  list.push('FWL')  if response[39..39] == '1'  # Front Wide Left
+  list.push('FWR')  if response[40..40] == '1'  # Front Wide Right
+
+  # rest of response data are reserved
   
   output_channels = list.join(',')
-
 
   str = input_signal + " at " + input_frequency
   
@@ -106,10 +114,10 @@ end
 
 def decode_tuner_setting response
   case response 
-  when /FRF(\d+)/:  sprintf("FM %3.1f MHz", $1.to_i / 100.0)
-  when /FRA(\d+)/:  sprintf("AM %3.0f KHz", $1.to_i / 10.0)  # Don't know if this one is correct
+  when /^FRF(\d+)$/:  sprintf("FM %3.1f MHz", $1.to_i / 100.0)
+  when /^FRA(\d+)$/:  sprintf("AM %3.0f KHz", $1.to_i / 10.0)  # Don't know if this one is correct
   else
-    "unrecognized tuner code '#{response}'"
+    response
   end
 end
 
@@ -126,7 +134,7 @@ def decode_video_signal_info response
                    when "4": 'HDMI'
                    when "5": 'Self OSD/JPEG'
                    else
-                     "input " + response[3..3]
+                     "terminal code " + response[3..3]
                    end
 
   input_resolution = case response[4..5]
@@ -143,7 +151,7 @@ def decode_video_signal_info response
                      when "10": '1080/50p'
                      when "11": '1080/24p'
                      else
-                       "resolution " + response[4..5]
+                       "resolution code " + response[4..5]
                      end
   
   input_aspect = case response[6..6]
@@ -152,7 +160,7 @@ def decode_video_signal_info response
                  when '2': '16:9'
                  when '3': '14:9'
                  else
-                   "aspect # " + response[6..6]
+                   "aspect code " + response[6..6]
                  end
 
   str = input_terminal
@@ -183,40 +191,42 @@ def decode_fl_display response
          when '02': '* '
          when '03': '**'    # no idea what lights these refer to...need to study panel
          else 
-           '??'
+           '??'             # decode string of hex to corresponding ASCII, e.g. '53' => 'S'
          end   +  (response.unpack '@4' + 'a2' * 14).map { |c| c.to_i(16).chr }.join
 end
 
 # /^FN(\d\d)$/     -- input device response;  the codes can be used to set the device with the command '**FN' using appropriate code below
 
 def decode_input_device response
+
   return response unless response =~ /^FN\d\d$/
-  case response[2..3]
-  when '00': 'PHONO'           # not present on VSX 1021-k
-  when '01': 'CD'
-  when '02': 'TUNER'
-  when '03': 'CD-R/TAPE'
-  when '04': 'DVD'
-  when '05': 'TV/SAT'
-  when '10': 'Video 1'
-  when '12': 'MULTI CH IN'     # not present on VSX 1021-k
-  when '14': 'Video 2'
-  when '15': 'DVR/BDR'
-  when '17': 'iPod/USB'
-  when '19': 'HDMI 1'
-  when '20': 'HDMI 2'          # not present on VSX 1021-k
-  when '21': 'HDMI 3'          # not present on VSX 1021-k
-  when '22': 'HDMI 4'          # not present on VSX 1021-k
-  when '23': 'HDMI 5'          # not present on VSX 1021-k
-  when '24': 'HDMI 6'          # not present on VSX 1021-k
-  when '25': 'BD'
-  when '26': 'Home Media Gallery (Internet Radio)'
-  when '27': 'SIRIUS'
-  when '31': 'HDMI (cyclic)'
-  when '33': 'Adapter Port'
-  else 
-    response
-  end
+
+  return case response[2..3]
+         when '00': 'PHONO'           # not present on VSX 1021-k
+         when '01': 'CD'
+         when '02': 'TUNER'
+         when '03': 'CD-R/TAPE'
+         when '04': 'DVD'
+         when '05': 'TV/SAT'
+         when '10': 'Video 1'
+         when '12': 'MULTI CH IN'     # not present on VSX 1021-k
+         when '14': 'Video 2'
+         when '15': 'DVR/BDR'
+         when '17': 'iPod/USB'
+         when '19': 'HDMI 1'
+         when '20': 'HDMI 2'          # not present on VSX 1021-k
+         when '21': 'HDMI 3'          # not present on VSX 1021-k
+         when '22': 'HDMI 4'          # not present on VSX 1021-k
+         when '23': 'HDMI 5'          # not present on VSX 1021-k
+         when '24': 'HDMI 6'          # not present on VSX 1021-k
+         when '25': 'BD'
+         when '26': 'Home Media Gallery (Internet Radio)'
+         when '27': 'SIRIUS'
+         when '31': 'HDMI (cyclic)'
+         when '33': 'Adapter Port'
+         else 
+           response
+         end
 end
 
 #  /^VOL(\d+)$/    -- audio level response
@@ -353,7 +363,7 @@ def decode_listening_setting response
          when '0008': 'PURE DIRECT'
          when '0152': 'OPTIMUM SURROUND'                                       # [1]
          else
-           return "unexpected response #{response[2..5]}"
+           response
          end
 end
 
@@ -532,7 +542,7 @@ def decode_listening_mode response
          when '0e01': 'HDMI THROUGH'
          when '0f01': 'MULTI CH IN'
          else
-           "unknown code #{response[2..5]}"
+           response
          end
 end
 
