@@ -127,11 +127,13 @@ begin
     sleep 0.1  # lends to readability
   end
 
+#   'Operation timed out - connect(2)' (Errno::ETIMEDOUT),  - make this a quicker failure with socket options?
+
 rescue SocketError => e
   STDERR.puts "Can't locate VSX receiver named #{HOSTNAME}, #{e.message}."
   exit -1
 
-rescue Errno::ECONNREFUSED => e
+rescue Errno::ECONNREFUSED => e   # among other things, the VSX only handles one connection at a time.
   error_count += 1
   if error_count > 3
     STDERR.puts "Can't connect after 3 trys, giving up."
