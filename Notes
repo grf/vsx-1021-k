@@ -1,0 +1,10 @@
+Ruby-style DSL, maybe?
+
+
+
+   set mute off/on
+   set power off/on
+
+   show mute
+   show power
+
