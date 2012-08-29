@@ -124,7 +124,7 @@ begin
       repl_print '', 'goodbye'
       exit 0
     end
-    sleep 0.1  # lends to readability
+    sleep 0.1     # not striclty needed - but lends to readability in interaction
   end
 
 #   'Operation timed out - connect(2)' (Errno::ETIMEDOUT),  - make this a quicker failure with socket options?

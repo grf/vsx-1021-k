@@ -110,7 +110,7 @@ def decode_audio_signal_info response
   return str + ' (' + response + ')'
 end
 
-# /^FR[AF](\d+)$/   -- tuner setting response
+# /^FR[AF](\d+)$/   -- tuner setting response (to command ?FR)
 
 def decode_tuner_setting response
   case response 
@@ -121,7 +121,7 @@ def decode_tuner_setting response
   end
 end
 
-# /^VST\d{29}$/     -- video input status
+# /^VST\d{29}$/     -- video input status response (to command ?VST)
 
 def decode_video_signal_info response
   return response unless response =~ /^VST\d{29}$/
@@ -180,7 +180,7 @@ end
 
 
 
-# /^FL[0-9A-F]{30}$/
+# /^FL[0-9A-F]{30}$/  Front panel display reponse (to command ?FL)
 
 def decode_fl_display response
   return response unless response =~ /^FL[0-9A-F]{30}$/
@@ -195,7 +195,7 @@ def decode_fl_display response
          end   +  (response.unpack '@4' + 'a2' * 14).map { |c| c.to_i(16).chr }.join
 end
 
-# /^FN(\d\d)$/     -- input device response;  the codes can be used to set the device with the command '**FN' using appropriate code below
+# /^FN(\d\d)$/     -- input device response (to command ?F);  the codes can be used to set the device with the command '**FN' using reference below 
 
 def decode_input_device response
 
@@ -229,7 +229,7 @@ def decode_input_device response
          end
 end
 
-#  /^VOL(\d+)$/    -- audio level response
+#  /^VOL(\d+)$/    -- audio level response (to command ?V)
 
 def decode_audio_level response
   return response unless response =~ /^VOL(\d+)$/
