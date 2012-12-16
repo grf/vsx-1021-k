@@ -18,14 +18,14 @@ hostname = ARGV[0] || 'vsx'
 # usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
   
 
+begin
 
+  vsx = Vsx.new(hostname)
 
-vsx = Vsx.new(hostname)
+  puts "Tuned to " + vsx.tuner.report
+  puts "Volume is at " + vsx.volume.report
 
-puts "Tuned to " + vsx.tuner.report
-puts "Volume is at " + vsx.volume.report
-
-
-puts "Tuned to " + vsx.tuner.report
-puts "Volume is at " + vsx.volume.report
-
+rescue => e
+  puts "oops: #{e.class}"
+  puts e.message
+end

@@ -16,7 +16,6 @@ class VolumeControl
     @vsx = vsx
   end
 
-
   # to do: add incr, decr, set, mute, inquire methods
 
   def report
@@ -163,8 +162,17 @@ class Vsx
     @buff = ''
     @responses = []
 
+    raise NoResponse, "VSX at #{@hostname} did not respond to status check" unless command('', /R/)
+
     @tuner  = TunerControl.new(self)
     @volume = VolumeControl.new(self)
+
+  rescue SocketError => e
+    raise NoConnection, "Can't locate VSX receiver at #{@hostname}: #{e.message}."
+
+  rescue Errno::ECONNREFUSED => e   # among other things, the VSX only handles one connection at a time.
+    raise NoConnection, "VSX receiver at #{@hostname} not listening: #{e.message}."
+
   end
 
   def write str = ""
@@ -176,11 +184,11 @@ class Vsx
 
     results = select([ @socket ], nil, nil, timeout)
 
-    @buff += @socket.recv(4 * 1024) if (results and results[0].include? @socket)
+    @buff += @socket.recv(4 * 1024) if (results and results[0].include? @socket)  # results nil on timeout
 
     if @buff =~ /^(.*\r\n)(.*)$/m        # check for all completed input (ends with CRLF, aka \r\n)
-       @buff = $2                        # save partial response for later
-       @responses += $1.split(/\r\n/)    # get all the completed responses 
+       @buff = $2                        # save potential partial response for later..
+       @responses += $1.split(/\r\n/)    # and return all the completed responses 
     end
 
     @responses.shift
@@ -219,5 +227,3 @@ class Vsx
   end
 
 end
-
-
