@@ -22,10 +22,18 @@ begin
 
   vsx = Vsx.new(hostname)
 
-  puts "Tuned to " + vsx.tuner.report
-  puts "Volume is at " + vsx.volume.report
+
+  puts "Status: #{vsx.status}"
+
+  vsx.on
+
+  puts "Tuned to #{vsx.tuner.report}"
+  puts "Volume is at #{vsx.volume.report}"
+
+  vsx.tuner.select
 
 rescue => e
   puts "oops: #{e.class}"
   puts e.message
+  puts e.backtrace
 end
