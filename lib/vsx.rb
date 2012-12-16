@@ -69,7 +69,7 @@ class Vsx
   # methods calling this need to be aware of nil and throw error if
   # appropriate.
 
-  def command request, response_pattern
+  def command request, response_pattern = /.*/
     self.drain
     self.write request
 

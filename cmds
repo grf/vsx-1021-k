@@ -29,8 +29,7 @@ begin
 
   puts "Tuned to #{vsx.tuner.report}"
   puts "Volume is at #{vsx.volume.report}"
-
-  vsx.tuner.select
+  puts "Tuner selected: #{vsx.tuner.select}"
 
 rescue => e
   puts "oops: #{e.class}"

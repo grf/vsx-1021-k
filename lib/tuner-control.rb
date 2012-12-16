@@ -18,7 +18,6 @@ class TunerControl
     inquire[:frequency]
   end
 
-
   def report
     inq = inquire
     if inq[:band] == :fm
@@ -27,7 +26,6 @@ class TunerControl
       "AM " + inq[:frequency] + " " + inq[:units]
     end
   end
-
 
   # TODO: band=, frequency=   -- note: setting to band when already in that band gets no response, so check
 
@@ -39,24 +37,27 @@ class TunerControl
     #####
   end
 
-  # tell the VSX to use the tuner as input; returns true if succesful
-
-  #### TODO:  abstract this one...  command_eventually_matches
+  # Tell the VSX to use the tuner as input; returns true if succesful
+  # TODO:  may want to generalize this into the @vsx class
 
   def select
     input = @vsx.command_matches('?F', /FN(\d+)/, 'tuner selection')[0]
     return true if input == '02'
 
-    @vsx.command_matches('02FN', /(.*)/, 'tuner selection')   # we don't want to way
+    # this is slightly tricky - if we have to select a new input, the
+    # VSX generates a lot of messages. thus we use the lower-level
+    # command interface.
+
+    @vsx.command('02FN')
 
     3.times do
-      input = @vsx.command_matches('?F', /(.*)/, 'tuner selection')[0]
-      return true if input == '02'
+      return true if @vsx.command('?F') =~ /FN02/
       sleep 0.5
     end
 
     return false
   end
+
 
   private
   
