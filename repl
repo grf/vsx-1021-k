@@ -118,7 +118,7 @@ rescue SocketError => e
 
 rescue Errno::ECONNREFUSED => e   # among other things, the VSX only handles one connection at a time.
   error_count += 1
-  if error_count > 3
+  if error_count >= 3
     STDERR.puts "Can't connect after 3 trys, giving up."
     exit -1
   end

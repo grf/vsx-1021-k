@@ -1,4 +1,3 @@
-
 # maintain a table of regular expressions that we'll try to match up
 # against VSX responses
 
@@ -17,7 +16,7 @@ end
 def decode_response vsx_response
   DISPATCH_TABLE.each do |parser|
     text  = (parser[:regex] =~ vsx_response) && parser[:decoder].call(vsx_response)
-    title = (parser[:name].class == String) ? "#{parser[:name]}: " : ""
+    title = (parser[:name].class == String)  ? "#{parser[:name]}: " : ""
     return title + text if text
   end
   return vsx_response
