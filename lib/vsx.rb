@@ -7,9 +7,10 @@ require 'socket'
 require 'time'
 require 'vsx-exceptions'
 
-DEBUG = true
+DEBUG = true        # for info when read innocuously times out, etc
+DIAGNOSTICS = false # for timing commands, etc
 
-class Volume
+class VolumeControl
 
   def initialize vsx
     @vsx = vsx
@@ -22,7 +23,7 @@ class Volume
     return sprintf("%3.1f Db, %s", inquire_volume, inquire_mute ? 'muted' : 'not muted')
   end
 
-  def volume
+  def db
     return inquire_volume
   end
 
@@ -30,11 +31,14 @@ class Volume
     return inquire_mute
   end
 
+  # TODO: methods mute, unmute, db=, incr, decr
+
+
   def inquire_volume
     regx = /^VOL(\d+)$/
 
     response = @vsx.command '?V', regx
-    raise  NoResponse, "No response from VSX for volume inquiry" unless response
+    raise  NoResponse, "No response from VSX at #{@vsx.hostname} for volume inquiry" unless response
 
     regx =~ response
     return  ($1.to_i - 161) * 0.5
@@ -44,14 +48,14 @@ class Volume
     regx = /^MUT(\d+)$/
 
     response = @vsx.command '?M', regx
-    raise  NoResponse, "No response from VSX for mute inquiry" unless response
+    raise  NoResponse, "No response from VSX at #{@vsx.hostname} for mute inquiry" unless response
 
     regx =~ response
     case $1
     when '0' : true
     when '1' : false
     else
-      raise InvalidResponse, "Invalid response from VSX for mute inquiry"
+      raise InvalidResponse, "Invalid response from VSX at #{@vsx.hostname} for mute inquiry"
     end
   end
 
@@ -79,7 +83,7 @@ class Volume
 end
 
 
-class Tuner
+class TunerControl
 
   def initialize vsx
     @vsx = vsx
@@ -97,6 +101,7 @@ class Tuner
     inquire[:frequency]
   end
 
+
   def report
     inq = inquire
     if inq[:band] == :fm
@@ -105,6 +110,9 @@ class Tuner
       "AM " + inq[:frequency] + " " + inq[:units]
     end
   end
+
+
+  # TODO: band=, frequency=   -- note: setting to band when already in that band gets no response, so check
 
   def band= value
   end
@@ -123,7 +131,7 @@ class Tuner
     regx = /^FR([FA])(\d+$)/
 
     response = @vsx.command '?FR', regx
-    raise  NoResponse, "No response from VSX for tuner inquiry" unless response
+    raise  NoResponse, "No response from VSX at #{@vsx.hostname} for tuner inquiry" unless response
 
     regx =~ response
     raw_band, raw_freq = $1, $2
@@ -134,7 +142,7 @@ class Tuner
     when 'A'
       return { :band => :am, :frequency => sprintf("%3.0f", raw_freq.to_i / 1.0), :units => 'KHz' }
     else
-      raise InvalidResponse, "Bad response '#{response}' from VSX for tuner inquiry"
+      raise InvalidResponse, "Bad response '#{response}' from VSX at #{@vsx.hostname} for tuner inquiry"
     end
   end
 
@@ -146,11 +154,17 @@ end
 
 class Vsx
 
+  attr_reader :tuner, :volume, :hostname
+
   def initialize hostname
+
     @hostname = hostname
     @socket = TCPSocket::new(@hostname, 23)
     @buff = ''
     @responses = []
+
+    @tuner  = TunerControl.new(self)
+    @volume = VolumeControl.new(self)
   end
 
   def write str = ""
@@ -179,18 +193,14 @@ class Vsx
   # methods calling this need to be aware of nil and throw error if
   # appropriate.
 
-  def command request, response
-    # STDERR.puts "command(#{request}, #{response})" if DEBUG
-    drain
+  def command request, response_pattern
+    self.drain
     self.write request
 
-    time = 0.0
-    while r = self.read(0.1) do
-      return r if response =~ r
-      time += 0.1
-      STDERR.puts "command timeout" if DEBUG
-      return nil if time >= 0.5
-    end
+    response = self.read
+
+    return response if response.nil? or response_pattern =~ response   # nil on timeout, or the expected response
+    return nil                                                         # response was unexpected
   end
 
 
@@ -210,13 +220,4 @@ class Vsx
 
 end
 
-
-
-vsx = Vsx.new("vsx.sacred.net")
-
-tuner  = Tuner.new(vsx)
-volume = Volume.new(vsx)
-
-puts tuner.report
-puts volume.report
 
