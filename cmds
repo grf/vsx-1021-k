@@ -5,26 +5,19 @@ $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/')
 
 require 'vsx'
 
-
 def usage
   STDERR.puts "usage: #{$0} host"
   exit -1
 end
-
 
 hostname = ARGV[0] || 'vsx'
 
 # usage if hostname.nil?
 # usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
   
-
 begin
-
   vsx = Vsx.new(hostname)
-
-
   puts "Status: #{vsx.status}"
-
   vsx.on
 
   puts "Tuned to #{vsx.tuner.report}"

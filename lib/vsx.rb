@@ -55,12 +55,30 @@ class Vsx
 
   def on
     return if status == :on
-    raise NoResponse, "Can't power up VSX receiver at #{@hostname}" unless command('PO', /PWR0/, 1.5)  == 'PWR0'
+    
+    command('PO')
+    
+    4.times do
+      return if command('?P') =~ /PWR0/
+      STDERR.puts 'retrying on' if DEBUG
+      sleep 0.5
+    end
+
+    raise NoResponse, "Can't power up VSX receiver at #{@hostname}"
   end
 
   def off
     return if status == :off
-    raise NoResponse, "Can't power down VSX receiver at #{@hostname}" unless command('PF', /PWR1/, 1.5)  == 'PWR1'
+
+    command('PF')
+    
+    4.times do
+      return if command('?P') =~ /PWR1/
+      STDERR.puts 'retrying off' if DEBUG
+      sleep 0.5
+    end
+
+    raise NoResponse, "Can't power down VSX receiver at #{@hostname}"
   end
 
   # given a command request and a regular expression response, send
@@ -125,7 +143,7 @@ class Vsx
 
   def drain
     while resp = self.read(0.05) do
-      STDERR.puts "draining" if DEBUG
+      STDERR.puts "draining #{resp}" if DEBUG
     end
   end
 
