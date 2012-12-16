@@ -4,7 +4,7 @@ $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
 
 require 'socket'
-require 'vsx'
+require 'vsx-utils'
 
 @raw_buffer = ""
 @cmd_buffer = [ ]
