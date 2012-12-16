@@ -9,9 +9,9 @@ require 'vsx'
 @raw_buffer = ""
 @cmd_buffer = [ ]
 
-# hodge podge we'll send all at once:
+# hodge podge of commands we'll send all at once:
 
-REPORT = [ '?P', '?M', '?F', '?AST', '?V', '?FR', '?VST', '?FL', '?L', '?S' ].join("\r\n")
+REPORT = [ '?P', '?M', '?F', '?AST', '?V', '?FR', '?VST', '?FL', '?L', '?S', '?SPK' ].join("\r\n")
 
 def repl_prompt
   STDOUT.write 'cmd> '
@@ -21,6 +21,10 @@ end
 def repl_print *texts
   STDOUT.write texts.join("\n") + "\n"
   STDOUT.flush
+end
+
+def common_commands
+  repl_print "Common commands:", "  PO, PF - power on, off", "  VU, VD - volume up, down", "  04FN - XBMC input", "  02FN - Tuner"
 end
 
 def send_vsx_request str
@@ -33,29 +37,6 @@ def parse_buffer
     return $1.split(/\r\n/)             # get all the completed responses broken out
   else
     return nil
-  end
-end
-
-def decode_response response
-  case response
-  when "B00"               : "VSX busy - retry presently"  # error responses
-  when "E04"               : "Bad command code"
-  when "E06"               : "Bad command parameter"
-  when "MUT0"              : "VSX is muted"                # in response to command '?M'
-  when "MUT1"              : "VSX is not muted"
-  when "PWR0"              : "VSX is powered up"           # in response to command '?P'
-  when "PWR1"              : "VSX is not powered ip"
-  when "R"                 : "VSX OK"                      # response to bare CRLF
-  when /^AST[0-9]{43}$/    : "Audio input: " + decode_audio_signal_info(response)                            # '?AST'
-  when /^FL[0-9A-F]{30}$/  : "Front Display:  '" + decode_fl_display(response) + "'"                         # '?FL'
-  when /^FN(\d\d)$/        : "Currently taking input from " + decode_input_device(response)  + " device"     # '?F'
-  when /^FR[AF](\d+)$/     : "Tuner set to " + decode_tuner_setting(response)                                # '?FR"
-  when /^LM[0-9a-f]{4}$/   : "Playing listening mode: " + decode_listening_mode(response)                    # '?L'
-  when /^SR\d{4}$/         : "Listening setting: " + decode_listening_setting(response)                      # '?S'
-  when /^VOL(\d+)$/        : "Audio volume at " + decode_audio_level(response)                               # '?V'
-  when /^VST\d{29}$/       : "Video input: " + decode_video_signal_info(response)                            # '?VST'
-  else
-    response
   end
 end
 
@@ -108,6 +89,8 @@ begin
 
   send_vsx_request('')   # recommended in tech notes - 100 ms before they guarentee attention is acquired. Use bare CRLF.
   sleep 0.1
+
+  common_commands
 
   send_vsx_request(REPORT)
   sleep 0.5  # often need as much as half a second for VSX to fully respond to entire set of commands in REPORT string, improves printing to screen this way.

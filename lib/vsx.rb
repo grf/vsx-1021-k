@@ -1,9 +1,32 @@
 
+# maintain a table of regular expressions that we'll try to match up
+# against VSX responses
+
+DISPATCH_TABLE = []
+
+# provide a construct to populate the dispatch table, which includes a
+# proc to decode a matched response
+
+def on regex, name, &block
+  DISPATCH_TABLE.push({ :name => name, :regex => regex, :decoder => block })
+end
+
+# decode searches the dispatch table for a matching response, and
+# returns a string description of the response, if possible.
+
+def decode_response vsx_response
+  DISPATCH_TABLE.each do |parser|
+    text  = (parser[:regex] =~ vsx_response) && parser[:decoder].call(vsx_response)
+    title = (parser[:name].class == String) ? "#{parser[:name]}: " : ""
+    return title + text if text
+  end
+  return vsx_response
+end
+
+
 # /^AST[0-9]{43}$/  -- audio status request - return from command  '?AST'
 
-def decode_audio_signal_info response
-
-  return response unless response =~ /^AST[0-9]{43}$/
+on /^AST[0-9]{43}$/, 'Audio Status' do |response|
 
   input_signal = case response[3..4]
                  when '00': 'analog'
@@ -107,24 +130,23 @@ def decode_audio_signal_info response
     str += '; driving speaker channels ' + output_channels
   end
 
-  return str + ' (' + response + ')'
+  str + ' (' + response + ')'
 end
 
 # /^FR[AF](\d+)$/   -- tuner setting response (to command ?FR)
 
-def decode_tuner_setting response
-  case response 
+on /^FR[AF]\d+$/, 'Tuner Setting' do |params|
+  case params
   when /^FRF(\d+)$/:  sprintf("FM %3.1f MHz", $1.to_i / 100.0)
-  when /^FRA(\d+)$/:  sprintf("AM %3.0f KHz", $1.to_i / 10.0)  # Don't know if this one is correct
+  when /^FRA(\d+)$/:  sprintf("AM %3.0f KHz", $1.to_i / 1.0)  # Don't know if this one is correct
   else
-    response
+    params
   end
 end
 
 # /^VST\d{29}$/     -- video input status response (to command ?VST)
 
-def decode_video_signal_info response
-  return response unless response =~ /^VST\d{29}$/
+on /^VST\d{29}$/, 'Video Status' do |response|
   
   input_terminal = case response[3..3]
                    when "0": nil
@@ -173,7 +195,7 @@ def decode_video_signal_info response
     str += ' formatted ' + input_aspect
   end
 
-  return str + ",  (#{response})"
+  str + ",  (#{response})"
 end
 
 
@@ -182,58 +204,70 @@ end
 
 # /^FL[0-9A-F]{30}$/  Front panel display reponse (to command ?FL)
 
-def decode_fl_display response
-  return response unless response =~ /^FL[0-9A-F]{30}$/
+on /^FL[0-9A-F]{30}$/, 'Display' do |response|
   
-  return case response[2..3]
-         when '00': '  '
-         when '01': ' *'
-         when '02': '* '
-         when '03': '**'    # no idea what lights these refer to...need to study panel
-         else 
-           '??'             # decode string of hex to corresponding ASCII, e.g. '53' => 'S'
-         end   +  (response.unpack '@4' + 'a2' * 14).map { |c| c.to_i(16).chr }.join
+  case response[2..3]
+  when '00': '  '
+  when '01': ' *'
+  when '02': '* '
+  when '03': '**'    # no idea what lights these refer to...need to study panel
+  else 
+    '??'             # decode string of hex to corresponding ASCII, e.g. '53' => 'S'
+  end   +  (response.unpack '@4' + 'a2' * 14).map { |c| c.to_i(16).chr }.join
 end
 
 # /^FN(\d\d)$/     -- input device response (to command ?F);  the codes can be used to set the device with the command '**FN' using reference below 
 
-def decode_input_device response
+on  /^FN\d\d$/, 'Input Device' do |response|
 
-  return response unless response =~ /^FN\d\d$/
-
-  return case response[2..3]
-         when '00': 'PHONO'           # not present on VSX 1021-k
-         when '01': 'CD'
-         when '02': 'TUNER'
-         when '03': 'CD-R/TAPE'
-         when '04': 'DVD'
-         when '05': 'TV/SAT'
-         when '10': 'Video 1'
-         when '12': 'MULTI CH IN'     # not present on VSX 1021-k
-         when '14': 'Video 2'
-         when '15': 'DVR/BDR'
-         when '17': 'iPod/USB'
-         when '19': 'HDMI 1'
-         when '20': 'HDMI 2'          # not present on VSX 1021-k
-         when '21': 'HDMI 3'          # not present on VSX 1021-k
-         when '22': 'HDMI 4'          # not present on VSX 1021-k
-         when '23': 'HDMI 5'          # not present on VSX 1021-k
-         when '24': 'HDMI 6'          # not present on VSX 1021-k
-         when '25': 'BD'
-         when '26': 'Home Media Gallery (Internet Radio)'
-         when '27': 'SIRIUS'
-         when '31': 'HDMI (cyclic)'
-         when '33': 'Adapter Port'
-         else 
-           response
-         end
+  case response[2..3]
+  when '00': 'PHONO'           # not present on VSX 1021-k
+  when '01': 'CD'
+  when '02': 'TUNER'
+  when '03': 'CD-R/TAPE'
+  when '04': 'DVD'
+  when '05': 'TV/SAT'
+  when '10': 'Video 1'
+  when '12': 'MULTI CH IN'     # not present on VSX 1021-k
+  when '14': 'Video 2'
+  when '15': 'DVR/BDR'
+  when '17': 'iPod/USB'
+  when '19': 'HDMI 1'
+  when '20': 'HDMI 2'          # not present on VSX 1021-k
+  when '21': 'HDMI 3'          # not present on VSX 1021-k
+  when '22': 'HDMI 4'          # not present on VSX 1021-k
+  when '23': 'HDMI 5'          # not present on VSX 1021-k
+  when '24': 'HDMI 6'          # not present on VSX 1021-k
+  when '25': 'BD'
+  when '26': 'Home Media Gallery (Internet Radio)'
+  when '27': 'SIRIUS'
+  when '31': 'HDMI (cyclic)'
+  when '33': 'Adapter Port'
+  else 
+    response
+  end
 end
 
 #  /^VOL(\d+)$/    -- audio level response (to command ?V)
 
-def decode_audio_level response
-  return response unless response =~ /^VOL(\d+)$/
-  return "#{sprintf "%3.1f", ($1.to_i - 161) * 0.5} dB"
+on /^VOL\d+$/, 'Audio Level' do |response|
+
+  vol = response.gsub('VOL', '').to_i
+  "#{sprintf "%3.1f", (vol - 161) * 0.5} dB"
+end
+
+
+# handle /^SPK\d$/ -- speaker status response (to command ?SPK)
+
+on /^SPK\d$/, 'Speaker Status' do |response|
+  case response[3..3]
+  when '0': 'Speaker Off'
+  when '1': 'Speaker A'
+  when '2': 'Speaker B'
+  when '3': 'Speaker A+B'
+  else
+    response
+  end
 end
 
 #
@@ -241,332 +275,321 @@ end
 #
 # These codes can be used to set the listening mode with  '****SR' command, using appropriate 4 character listening mode code
 
-def decode_listening_setting response
 
-  return response unless response =~ /^SR\d{4}$/
+on  /^SR\d{4}$/, 'Listening Setting' do |response|
 
   # [1]       indicates unsupported on my model, VSX 1021-K
 
-  return case response[2..5]
-         when '0001': 'STEREO (cyclic)'
-         when '0010': 'STANDARD'
-         when '0009': 'STEREO (direct set)'
-         when '0011': '(2ch source)'                                           # [1]
-         when '0013': 'PRO LOGIC2 MOVIE'
-         when '0018': 'PRO LOGIC2x MOVIE'
-         when '0014': 'PRO LOGIC2 MUSIC'
-         when '0019': 'PRO LOGIC2x MUSIC'
-         when '0015': 'PRO LOGIC2 GAME'
-         when '0020': 'PRO LOGIC2x GAME'
-         when '0031': 'PRO LOGIC2z HEIGHT'
-         when '0032': 'WIDE SURROUND MOVIE'
-         when '0033': 'WIDE SURROUND MUSIC'
-         when '0012': 'PRO LOGIC'
-         when '0016': 'Neo:6 CINEMA'
-         when '0017': 'Neo:6 MUSIC'
-         when '0028': 'XM HD SURROUND'                                         # [1]
-         when '0029': 'NEURAL SURROUND'
-         when '0037': 'Neo:X CINEMA'                                           # [1]
-         when '0038': 'Neo:X MUSIC'                                            # [1]
-         when '0039': 'Neo:X GAME'                                             # [1]
-         when '0040': 'NEURAL SURROUND+Neo:X CINEMA'                           # [1]
-         when '0041': 'NEURAL SURROUND+Neo:X MUSIC'                            # [1]
-         when '0042': 'NEURAL SURROUND+Neo:X GAME'                             # [1]
-         when '0021': '(Multi ch source)'
-         when '0022': '(Multi ch source)+DOLBY EX'
-         when '0023': '(Multi ch source)+PRO LOGIC2x MOVIE'
-         when '0024': '(Multi ch source)+PRO LOGIC2x MUSIC'
-         when '0034': '(Multi-ch Source)+PRO LOGIC2z HEIGHT'
-         when '0035': '(Multi-ch Source)+WIDE SURROUND MOVIE'
-         when '0036': '(Multi-ch Source)+WIDE SURROUND MUSIC'
-         when '0025': '(Multi ch source)DTS-ES Neo:6'
-         when '0026': '(Multi ch source)DTS-ES matrix'
-         when '0027': '(Multi ch source)DTS-ES discrete'
-         when '0030': '(Multi ch source)DTS-ES 8ch discrete'
-         when '0043': '(Multi ch source)DTS-ES Neo:X'                          # [1]
-         when '0100': 'ADVANCED SURROUND (cyclic)'
-         when '0101': 'ACTION'
-         when '0103': 'DRAMA'
-         when '0102': 'SCI-FI'
-         when '0105': 'MONO FILM'
-         when '0104': 'ENTERTAINMENT SHOW'
-         when '0106': 'EXPANDED THEATER'
-         when '0116': 'TV SURROUND'
-         when '0118': 'ADVANCED GAME'
-         when '0117': 'SPORTS'
-         when '0107': 'CLASSICAL'
-         when '0110': 'ROCK/POP'
-         when '0109': 'UNPLUGGED'
-         when '0112': 'EXTENDED STEREO'
-         when '0003': 'Front Stage Surround Advance Focus'
-         when '0004': 'Front Stage Surround Advance Wide'
-         when '0153': 'RETRIEVER AIR'
-         when '0113': 'PHONES SURROUND'
-         when '0050': 'THX (cyclic)'                                           # [1]
-         when '0051': 'PROLOGIC + THX CINEMA'                                  # [1]
-         when '0052': 'PL2 MOVIE + THX CINEMA'                                 # [1]
-         when '0053': 'Neo:6 CINEMA + THX CINEMA'                              # [1]
-         when '0054': 'PL2x MOVIE + THX CINEMA'                                # [1]
-         when '0092': 'PL2z HEIGHT + THX CINEMA'                               # [1]
-         when '0055': 'THX SELECT2 GAMES'                                      # [1]
-         when '0068': 'THX CINEMA (for 2ch)'                                   # [1]
-         when '0069': 'THX MUSIC (for 2ch)'                                    # [1]
-         when '0070': 'THX GAMES (for 2ch)'                                    # [1]
-         when '0071': 'PL2 MUSIC + THX MUSIC'                                  # [1]
-         when '0072': 'PL2x MUSIC + THX MUSIC'                                 # [1]
-         when '0093': 'PL2z HEIGHT + THX MUSIC'                                # [1]
-         when '0073': 'Neo:6 MUSIC + THX MUSIC'                                # [1]
-         when '0074': 'PL2 GAME + THX GAMES'                                   # [1]
-         when '0075': 'PL2x GAME + THX GAMES'                                  # [1]
-         when '0094': 'PL2z HEIGHT + THX GAMES'                                # [1]
-         when '0076': 'THX ULTRA2 GAMES'                                       # [1]
-         when '0077': 'PROLOGIC + THX MUSIC'                                   # [1]
-         when '0078': 'PROLOGIC + THX GAMES'                                   # [1]
-         when '0201': 'Neo:X CINEMA + THX CINEMA'                              # [1]
-         when '0202': 'Neo:X MUSIC + THX MUSIC'                                # [1]
-         when '0203': 'Neo:X GAME + THX GAMES'                                 # [1]
-         when '0056': 'THX CINEMA (for multi ch)'                              # [1]
-         when '0057': 'THX SURROUND EX (for multi ch)'                         # [1]
-         when '0058': 'PL2x MOVIE + THX CINEMA (for multi ch)'                 # [1]
-         when '0095': 'PL2z HEIGHT + THX CINEMA (for multi ch)'                # [1]
-         when '0059': 'ES Neo:6 + THX CINEMA (for multi ch)'                   # [1]
-         when '0060': 'ES MATRIX + THX CINEMA (for multi ch)'                  # [1]
-         when '0061': 'ES DISCRETE + THX CINEMA (for multi ch)'                # [1]
-         when '0067': 'ES 8ch DISCRETE + THX CINEMA (for multi ch)'            # [1]
-         when '0062': 'THX SELECT2 CINEMA (for multi ch)'                      # [1]
-         when '0063': 'THX SELECT2 MUSIC (for multi ch)'                       # [1]
-         when '0064': 'THX SELECT2 GAMES (for multi ch)'                       # [1]
-         when '0065': 'THX ULTRA2 CINEMA (for multi ch)'                       # [1]
-         when '0066': 'THX ULTRA2 MUSIC (for multi ch)'                        # [1]
-         when '0079': 'THX ULTRA2 GAMES (for multi ch)'                        # [1]
-         when '0080': 'THX MUSIC (for multi ch)'                               # [1]
-         when '0081': 'THX GAMES (for multi ch)'                               # [1]
-         when '0082': 'PL2x MUSIC + THX MUSIC (for multi ch)'                  # [1]
-         when '0096': 'PL2z HEIGHT + THX MUSIC (for multi ch)'                 # [1]
-         when '0083': 'EX + THX GAMES (for multi ch)'                          # [1]
-         when '0097': 'PL2z HEIGHT + THX GAMES (for multi ch)'                 # [1]
-         when '0084': 'Neo:6 + THX MUSIC (for multi ch)'                       # [1]
-         when '0085': 'Neo:6 + THX GAMES (for multi ch)'                       # [1]
-         when '0086': 'ES MATRIX + THX MUSIC (for multi ch)'                   # [1]
-         when '0087': 'ES MATRIX + THX GAMES (for multi ch)'                   # [1]
-         when '0088': 'ES DISCRETE + THX MUSIC (for multi ch)'                 # [1]
-         when '0089': 'ES DISCRETE + THX GAMES (for multi ch)'                 # [1]
-         when '0090': 'ES 8CH DISCRETE + THX MUSIC (for multi ch)'             # [1]
-         when '0091': 'ES 8CH DISCRETE + THX GAMES (for multi ch)'             # [1]
-         when '0204': 'Neo:X + THX CINEMA (for multi ch)'                      # [1]
-         when '0205': 'Neo:X + THX MUSIC (for multi ch)'                       # [1]
-         when '0206': 'Neo:X + THX GAMES (for multi ch)'                       # [1]
-         when '0005': 'AUTO SURR/STREAM DIRECT (cyclic)'
-         when '0006': 'AUTO SURROUND'
-         when '0151': 'Auto Level Control (A.L.C.)'
-         when '0007': 'DIRECT'
-         when '0008': 'PURE DIRECT'
-         when '0152': 'OPTIMUM SURROUND'                                       # [1]
-         else
-           response
-         end
+  case response[2..5]
+  when '0001': 'STEREO (cyclic)'
+  when '0010': 'STANDARD'
+  when '0009': 'STEREO (direct set)'
+  when '0011': '(2ch source)'                                           # [1]
+  when '0013': 'PRO LOGIC2 MOVIE'
+  when '0018': 'PRO LOGIC2x MOVIE'
+  when '0014': 'PRO LOGIC2 MUSIC'
+  when '0019': 'PRO LOGIC2x MUSIC'
+  when '0015': 'PRO LOGIC2 GAME'
+  when '0020': 'PRO LOGIC2x GAME'
+  when '0031': 'PRO LOGIC2z HEIGHT'
+  when '0032': 'WIDE SURROUND MOVIE'
+  when '0033': 'WIDE SURROUND MUSIC'
+  when '0012': 'PRO LOGIC'
+  when '0016': 'Neo:6 CINEMA'
+  when '0017': 'Neo:6 MUSIC'
+  when '0028': 'XM HD SURROUND'                                         # [1]
+  when '0029': 'NEURAL SURROUND'
+  when '0037': 'Neo:X CINEMA'                                           # [1]
+  when '0038': 'Neo:X MUSIC'                                            # [1]
+  when '0039': 'Neo:X GAME'                                             # [1]
+  when '0040': 'NEURAL SURROUND+Neo:X CINEMA'                           # [1]
+  when '0041': 'NEURAL SURROUND+Neo:X MUSIC'                            # [1]
+  when '0042': 'NEURAL SURROUND+Neo:X GAME'                             # [1]
+  when '0021': '(Multi ch source)'
+  when '0022': '(Multi ch source)+DOLBY EX'
+  when '0023': '(Multi ch source)+PRO LOGIC2x MOVIE'
+  when '0024': '(Multi ch source)+PRO LOGIC2x MUSIC'
+  when '0034': '(Multi-ch Source)+PRO LOGIC2z HEIGHT'
+  when '0035': '(Multi-ch Source)+WIDE SURROUND MOVIE'
+  when '0036': '(Multi-ch Source)+WIDE SURROUND MUSIC'
+  when '0025': '(Multi ch source)DTS-ES Neo:6'
+  when '0026': '(Multi ch source)DTS-ES matrix'
+  when '0027': '(Multi ch source)DTS-ES discrete'
+  when '0030': '(Multi ch source)DTS-ES 8ch discrete'
+  when '0043': '(Multi ch source)DTS-ES Neo:X'                          # [1]
+  when '0100': 'ADVANCED SURROUND (cyclic)'
+  when '0101': 'ACTION'
+  when '0103': 'DRAMA'
+  when '0102': 'SCI-FI'
+  when '0105': 'MONO FILM'
+  when '0104': 'ENTERTAINMENT SHOW'
+  when '0106': 'EXPANDED THEATER'
+  when '0116': 'TV SURROUND'
+  when '0118': 'ADVANCED GAME'
+  when '0117': 'SPORTS'
+  when '0107': 'CLASSICAL'
+  when '0110': 'ROCK/POP'
+  when '0109': 'UNPLUGGED'
+  when '0112': 'EXTENDED STEREO'
+  when '0003': 'Front Stage Surround Advance Focus'
+  when '0004': 'Front Stage Surround Advance Wide'
+  when '0153': 'RETRIEVER AIR'
+  when '0113': 'PHONES SURROUND'
+  when '0050': 'THX (cyclic)'                                           # [1]
+  when '0051': 'PROLOGIC + THX CINEMA'                                  # [1]
+  when '0052': 'PL2 MOVIE + THX CINEMA'                                 # [1]
+  when '0053': 'Neo:6 CINEMA + THX CINEMA'                              # [1]
+  when '0054': 'PL2x MOVIE + THX CINEMA'                                # [1]
+  when '0092': 'PL2z HEIGHT + THX CINEMA'                               # [1]
+  when '0055': 'THX SELECT2 GAMES'                                      # [1]
+  when '0068': 'THX CINEMA (for 2ch)'                                   # [1]
+  when '0069': 'THX MUSIC (for 2ch)'                                    # [1]
+  when '0070': 'THX GAMES (for 2ch)'                                    # [1]
+  when '0071': 'PL2 MUSIC + THX MUSIC'                                  # [1]
+  when '0072': 'PL2x MUSIC + THX MUSIC'                                 # [1]
+  when '0093': 'PL2z HEIGHT + THX MUSIC'                                # [1]
+  when '0073': 'Neo:6 MUSIC + THX MUSIC'                                # [1]
+  when '0074': 'PL2 GAME + THX GAMES'                                   # [1]
+  when '0075': 'PL2x GAME + THX GAMES'                                  # [1]
+  when '0094': 'PL2z HEIGHT + THX GAMES'                                # [1]
+  when '0076': 'THX ULTRA2 GAMES'                                       # [1]
+  when '0077': 'PROLOGIC + THX MUSIC'                                   # [1]
+  when '0078': 'PROLOGIC + THX GAMES'                                   # [1]
+  when '0201': 'Neo:X CINEMA + THX CINEMA'                              # [1]
+  when '0202': 'Neo:X MUSIC + THX MUSIC'                                # [1]
+  when '0203': 'Neo:X GAME + THX GAMES'                                 # [1]
+  when '0056': 'THX CINEMA (for multi ch)'                              # [1]
+  when '0057': 'THX SURROUND EX (for multi ch)'                         # [1]
+  when '0058': 'PL2x MOVIE + THX CINEMA (for multi ch)'                 # [1]
+  when '0095': 'PL2z HEIGHT + THX CINEMA (for multi ch)'                # [1]
+  when '0059': 'ES Neo:6 + THX CINEMA (for multi ch)'                   # [1]
+  when '0060': 'ES MATRIX + THX CINEMA (for multi ch)'                  # [1]
+  when '0061': 'ES DISCRETE + THX CINEMA (for multi ch)'                # [1]
+  when '0067': 'ES 8ch DISCRETE + THX CINEMA (for multi ch)'            # [1]
+  when '0062': 'THX SELECT2 CINEMA (for multi ch)'                      # [1]
+  when '0063': 'THX SELECT2 MUSIC (for multi ch)'                       # [1]
+  when '0064': 'THX SELECT2 GAMES (for multi ch)'                       # [1]
+  when '0065': 'THX ULTRA2 CINEMA (for multi ch)'                       # [1]
+  when '0066': 'THX ULTRA2 MUSIC (for multi ch)'                        # [1]
+  when '0079': 'THX ULTRA2 GAMES (for multi ch)'                        # [1]
+  when '0080': 'THX MUSIC (for multi ch)'                               # [1]
+  when '0081': 'THX GAMES (for multi ch)'                               # [1]
+  when '0082': 'PL2x MUSIC + THX MUSIC (for multi ch)'                  # [1]
+  when '0096': 'PL2z HEIGHT + THX MUSIC (for multi ch)'                 # [1]
+  when '0083': 'EX + THX GAMES (for multi ch)'                          # [1]
+  when '0097': 'PL2z HEIGHT + THX GAMES (for multi ch)'                 # [1]
+  when '0084': 'Neo:6 + THX MUSIC (for multi ch)'                       # [1]
+  when '0085': 'Neo:6 + THX GAMES (for multi ch)'                       # [1]
+  when '0086': 'ES MATRIX + THX MUSIC (for multi ch)'                   # [1]
+  when '0087': 'ES MATRIX + THX GAMES (for multi ch)'                   # [1]
+  when '0088': 'ES DISCRETE + THX MUSIC (for multi ch)'                 # [1]
+  when '0089': 'ES DISCRETE + THX GAMES (for multi ch)'                 # [1]
+  when '0090': 'ES 8CH DISCRETE + THX MUSIC (for multi ch)'             # [1]
+  when '0091': 'ES 8CH DISCRETE + THX GAMES (for multi ch)'             # [1]
+  when '0204': 'Neo:X + THX CINEMA (for multi ch)'                      # [1]
+  when '0205': 'Neo:X + THX MUSIC (for multi ch)'                       # [1]
+  when '0206': 'Neo:X + THX GAMES (for multi ch)'                       # [1]
+  when '0005': 'AUTO SURR/STREAM DIRECT (cyclic)'
+  when '0006': 'AUTO SURROUND'
+  when '0151': 'Auto Level Control (A.L.C.)'
+  when '0007': 'DIRECT'
+  when '0008': 'PURE DIRECT'
+  when '0152': 'OPTIMUM SURROUND'                                       # [1]
+  else
+    response
+  end
 end
 
 
 # /^LM[0-9a-f]{4}$/   -- display listening mode (response to command '?L')
 # unlike responses to the above, these codes are not used to set anything (so I believe)
 
-def decode_listening_mode response
+on  /^LM[0-9a-f]{4}$/, 'Listening Mode' do |response|
 
-  return response unless response =~ /^LM[0-9a-f]{4}$/
-
-  return case response[2..5]
-         when '0101': '[)(]PLIIx MOVIE'
-         when '0102': '[)(]PLII MOVIE'
-         when '0103': '[)(]PLIIx MUSIC'
-         when '0104': '[)(]PLII MUSIC'
-         when '0105': '[)(]PLIIx GAME'
-         when '0106': '[)(]PLII GAME'
-         when '0107': '[)(]PROLOGIC'
-         when '0108': 'Neo:6 CINEMA'
-         when '0109': 'Neo:6 MUSIC'
-         when '010a': 'XM HD Surround'
-         when '010b': 'NEURAL SURR'
-         when '010c': '2ch Straight Decode'
-         when '010d': '[)(]PLIIz HEIGHT'
-         when '010e': 'WIDE SURR MOVIE'
-         when '010f': 'WIDE SURR MUSIC'
-         when '0110': 'STEREO'
-         when '0111': 'Neo:X CINEMA'
-         when '0112': 'Neo:X MUSIC'
-         when '0113': 'Neo:X GAME'
-         when '0114': 'NEURAL SURROUND+Neo:X CINEMA'
-         when '0115': 'NEURAL SURROUND+Neo:X MUSIC'
-         when '0116': 'NEURAL SURROUND+Neo:X GAMES'
-         when '1101': '[)(]PLIIx MOVIE'
-         when '1102': '[)(]PLIIx MUSIC'
-         when '1103': '[)(]DIGITAL EX'
-         when '1104': 'DTS +Neo:6 / DTS-HD +Neo:6'
-         when '1105': 'ES MATRIX'
-         when '1106': 'ES DISCRETE'
-         when '1107': 'DTS-ES 8ch'
-         when '1108': 'multi ch Straight Decode'
-         when '1109': '[)(]PLIIz HEIGHT'
-         when '110a': 'WIDE SURR MOVIE'
-         when '110b': 'WIDE SURR MUSIC'
-         when '110c': 'ES Neo:X'
-         when '0201': 'ACTION'
-         when '0202': 'DRAMA'
-         when '0203': 'SCI-FI'
-         when '0204': 'MONOFILM'
-         when '0205': 'ENT.SHOW'
-         when '0206': 'EXPANDED'
-         when '0207': 'TV SURROUND'
-         when '0208': 'ADVANCEDGAME'
-         when '0209': 'SPORTS'
-         when '020a': 'CLASSICAL'
-         when '020b': 'ROCK/POP'
-         when '020c': 'UNPLUGGED'
-         when '020d': 'EXT.STEREO'
-         when '020e': 'PHONES SURR.'
-         when '020f': 'FRONT STAGE SURROUND ADVANCE FOCUS'
-         when '0210': 'FRONT STAGE SURROUND ADVANCE WIDE'
-         when '0211': 'SOUND RETRIEVER AIR'
-         when '0301': '[)(]PLIIx MOVIE +THX'
-         when '0302': '[)(]PLII MOVIE +THX'
-         when '0303': '[)(]PL +THX CINEMA'
-         when '0304': 'Neo:6 CINEMA +THX'
-         when '0305': 'THX CINEMA'
-         when '0306': '[)(]PLIIx MUSIC +THX'
-         when '0307': '[)(]PLII MUSIC +THX'
-         when '0308': '[)(]PL +THX MUSIC'
-         when '0309': 'Neo:6 MUSIC +THX'
-         when '030a': 'THX MUSIC'
-         when '030b': '[)(]PLIIx GAME +THX'
-         when '030c': '[)(]PLII GAME +THX'
-         when '030d': '[)(]PL +THX GAMES'
-         when '030e': 'THX ULTRA2 GAMES'
-         when '030f': 'THX SELECT2 GAMES'
-         when '0310': 'THX GAMES'
-         when '0311': '[)(]PLIIz +THX CINEMA'
-         when '0312': '[)(]PLIIz +THX MUSIC'
-         when '0313': '[)(]PLIIz +THX GAMES'
-         when '0314': 'Neo:X CINEMA + THX CINEMA'
-         when '0315': 'Neo:X MUSIC + THX MUSIC'
-         when '0316': 'Neo:X GAMES + THX GAMES'
-         when '1301': 'THX Surr EX'
-         when '1302': 'Neo:6 +THX CINEMA'
-         when '1303': 'ES MTRX +THX CINEMA'
-         when '1304': 'ES DISC +THX CINEMA'
-         when '1305': 'ES 8ch +THX CINEMA'
-         when '1306': '[)(]PLIIx MOVIE +THX'
-         when '1307': 'THX ULTRA2 CINEMA'
-         when '1308': 'THX SELECT2 CINEMA'
-         when '1309': 'THX CINEMA'
-         when '130a': 'Neo:6 +THX MUSIC'
-         when '130b': 'ES MTRX +THX MUSIC'
-         when '130c': 'ES DISC +THX MUSIC'
-         when '130d': 'ES 8ch +THX MUSIC'
-         when '130e': '[)(]PLIIx MUSIC +THX'
-         when '130f': 'THX ULTRA2 MUSIC'
-         when '1310': 'THX SELECT2 MUSIC'
-         when '1311': 'THX MUSIC'
-         when '1312': 'Neo:6 +THX GAMES'
-         when '1313': 'ES MTRX +THX GAMES'
-         when '1314': 'ES DISC +THX GAMES'
-         when '1315': 'ES 8ch +THX GAMES'
-         when '1316': '[)(]EX +THX GAMES'
-         when '1317': 'THX ULTRA2 GAMES'
-         when '1318': 'THX SELECT2 GAMES'
-         when '1319': 'THX GAMES'
-         when '131a': '[)(]PLIIz +THX CINEMA'
-         when '131b': '[)(]PLIIz +THX MUSIC'
-         when '131c': '[)(]PLIIz +THX GAMES'
-         when '131d': 'Neo:X + THX CINEMA'
-         when '131e': 'Neo:X + THX MUSIC'
-         when '131f': 'Neo:X + THX GAMES'
-         when '0401': 'STEREO'
-         when '0402': '[)(]PLII MOVIE'
-         when '0403': '[)(]PLIIx MOVIE'
-         when '0404': 'Neo:6 CINEMA'
-         when '0405': 'AUTO SURROUND Straight Decode'
-         when '0406': '[)(]DIGITAL EX'
-         when '0407': '[)(]PLIIx MOVIE'
-         when '0408': 'DTS +Neo:6'
-         when '0409': 'ES MATRIX'
-         when '040a': 'ES DISCRETE'
-         when '040b': 'DTS-ES 8ch'
-         when '040c': 'XM HD Surround'
-         when '040d': 'NEURAL SURR'
-         when '040e': 'RETRIEVER AIR'
-         when '040f': 'Neo:X CINEMA'
-         when '0410': 'ES Neo:X'
-         when '0501': 'STEREO'
-         when '0502': '[)(]PLII MOVIE'
-         when '0503': '[)(]PLIIx MOVIE'
-         when '0504': 'Neo:6 CINEMA'
-         when '0505': 'ALC Straight Decode'
-         when '0506': '[)(]DIGITAL EX'
-         when '0507': '[)(]PLIIx MOVIE'
-         when '0508': 'DTS +Neo:6'
-         when '0509': 'ES MATRIX'
-         when '050a': 'ES DISCRETE'
-         when '050b': 'DTS-ES 8ch'
-         when '050c': 'XM HD Surround'
-         when '050d': 'NEURAL SURR'
-         when '050e': 'RETRIEVER AIR'
-         when '050f': 'Neo:X CINEMA'
-         when '0510': 'ES Neo:X'
-         when '0601': 'STEREO'
-         when '0602': '[)(]PLII MOVIE'
-         when '0603': '[)(]PLIIx MOVIE'
-         when '0604': 'Neo:6 CINEMA'
-         when '0605': 'STREAM DIRECT NORMAL Straight Decode'
-         when '0606': '[)(]DIGITAL EX'
-         when '0607': '[)(]PLIIx MOVIE'
-         when '0608': '(nothing)'
-         when '0609': 'ES MATRIX'
-         when '060a': 'ES DISCRETE'
-         when '060b': 'DTS-ES 8ch'
-         when '060c': 'Neo:X CINEMA'
-         when '060d': 'ES Neo:X'
-         when '0701': 'STREAM DIRECT PURE 2ch'
-         when '0702': '[)(]PLII MOVIE'
-         when '0703': '[)(]PLIIx MOVIE'
-         when '0704': 'Neo:6 CINEMA'
-         when '0705': 'STREAM DIRECT PURE Straight Decode'
-         when '0706': '[)(]DIGITAL EX'
-         when '0707': '[)(]PLIIx MOVIE'
-         when '0708': '(nothing)'
-         when '0709': 'ES MATRIX'
-         when '070a': 'ES DISCRETE'
-         when '070b': 'DTS-ES 8ch'
-         when '070c': 'Neo:X CINEMA'
-         when '070d': 'ES Neo:X'
-         when '0881': 'OPTIMUM'
-         when '0e01': 'HDMI THROUGH'
-         when '0f01': 'MULTI CH IN'
-         else
-           response
-         end
+  case response[2..5]
+  when '0101': '[)(]PLIIx MOVIE'
+  when '0102': '[)(]PLII MOVIE'
+  when '0103': '[)(]PLIIx MUSIC'
+  when '0104': '[)(]PLII MUSIC'
+  when '0105': '[)(]PLIIx GAME'
+  when '0106': '[)(]PLII GAME'
+  when '0107': '[)(]PROLOGIC'
+  when '0108': 'Neo:6 CINEMA'
+  when '0109': 'Neo:6 MUSIC'
+  when '010a': 'XM HD Surround'
+  when '010b': 'NEURAL SURR'
+  when '010c': '2ch Straight Decode'
+  when '010d': '[)(]PLIIz HEIGHT'
+  when '010e': 'WIDE SURR MOVIE'
+  when '010f': 'WIDE SURR MUSIC'
+  when '0110': 'STEREO'
+  when '0111': 'Neo:X CINEMA'
+  when '0112': 'Neo:X MUSIC'
+  when '0113': 'Neo:X GAME'
+  when '0114': 'NEURAL SURROUND+Neo:X CINEMA'
+  when '0115': 'NEURAL SURROUND+Neo:X MUSIC'
+  when '0116': 'NEURAL SURROUND+Neo:X GAMES'
+  when '1101': '[)(]PLIIx MOVIE'
+  when '1102': '[)(]PLIIx MUSIC'
+  when '1103': '[)(]DIGITAL EX'
+  when '1104': 'DTS +Neo:6 / DTS-HD +Neo:6'
+  when '1105': 'ES MATRIX'
+  when '1106': 'ES DISCRETE'
+  when '1107': 'DTS-ES 8ch'
+  when '1108': 'multi ch Straight Decode'
+  when '1109': '[)(]PLIIz HEIGHT'
+  when '110a': 'WIDE SURR MOVIE'
+  when '110b': 'WIDE SURR MUSIC'
+  when '110c': 'ES Neo:X'
+  when '0201': 'ACTION'
+  when '0202': 'DRAMA'
+  when '0203': 'SCI-FI'
+  when '0204': 'MONOFILM'
+  when '0205': 'ENT.SHOW'
+  when '0206': 'EXPANDED'
+  when '0207': 'TV SURROUND'
+  when '0208': 'ADVANCEDGAME'
+  when '0209': 'SPORTS'
+  when '020a': 'CLASSICAL'
+  when '020b': 'ROCK/POP'
+  when '020c': 'UNPLUGGED'
+  when '020d': 'EXT.STEREO'
+  when '020e': 'PHONES SURR.'
+  when '020f': 'FRONT STAGE SURROUND ADVANCE FOCUS'
+  when '0210': 'FRONT STAGE SURROUND ADVANCE WIDE'
+  when '0211': 'SOUND RETRIEVER AIR'
+  when '0301': '[)(]PLIIx MOVIE +THX'
+  when '0302': '[)(]PLII MOVIE +THX'
+  when '0303': '[)(]PL +THX CINEMA'
+  when '0304': 'Neo:6 CINEMA +THX'
+  when '0305': 'THX CINEMA'
+  when '0306': '[)(]PLIIx MUSIC +THX'
+  when '0307': '[)(]PLII MUSIC +THX'
+  when '0308': '[)(]PL +THX MUSIC'
+  when '0309': 'Neo:6 MUSIC +THX'
+  when '030a': 'THX MUSIC'
+  when '030b': '[)(]PLIIx GAME +THX'
+  when '030c': '[)(]PLII GAME +THX'
+  when '030d': '[)(]PL +THX GAMES'
+  when '030e': 'THX ULTRA2 GAMES'
+  when '030f': 'THX SELECT2 GAMES'
+  when '0310': 'THX GAMES'
+  when '0311': '[)(]PLIIz +THX CINEMA'
+  when '0312': '[)(]PLIIz +THX MUSIC'
+  when '0313': '[)(]PLIIz +THX GAMES'
+  when '0314': 'Neo:X CINEMA + THX CINEMA'
+  when '0315': 'Neo:X MUSIC + THX MUSIC'
+  when '0316': 'Neo:X GAMES + THX GAMES'
+  when '1301': 'THX Surr EX'
+  when '1302': 'Neo:6 +THX CINEMA'
+  when '1303': 'ES MTRX +THX CINEMA'
+  when '1304': 'ES DISC +THX CINEMA'
+  when '1305': 'ES 8ch +THX CINEMA'
+  when '1306': '[)(]PLIIx MOVIE +THX'
+  when '1307': 'THX ULTRA2 CINEMA'
+  when '1308': 'THX SELECT2 CINEMA'
+  when '1309': 'THX CINEMA'
+  when '130a': 'Neo:6 +THX MUSIC'
+  when '130b': 'ES MTRX +THX MUSIC'
+  when '130c': 'ES DISC +THX MUSIC'
+  when '130d': 'ES 8ch +THX MUSIC'
+  when '130e': '[)(]PLIIx MUSIC +THX'
+  when '130f': 'THX ULTRA2 MUSIC'
+  when '1310': 'THX SELECT2 MUSIC'
+  when '1311': 'THX MUSIC'
+  when '1312': 'Neo:6 +THX GAMES'
+  when '1313': 'ES MTRX +THX GAMES'
+  when '1314': 'ES DISC +THX GAMES'
+  when '1315': 'ES 8ch +THX GAMES'
+  when '1316': '[)(]EX +THX GAMES'
+  when '1317': 'THX ULTRA2 GAMES'
+  when '1318': 'THX SELECT2 GAMES'
+  when '1319': 'THX GAMES'
+  when '131a': '[)(]PLIIz +THX CINEMA'
+  when '131b': '[)(]PLIIz +THX MUSIC'
+  when '131c': '[)(]PLIIz +THX GAMES'
+  when '131d': 'Neo:X + THX CINEMA'
+  when '131e': 'Neo:X + THX MUSIC'
+  when '131f': 'Neo:X + THX GAMES'
+  when '0401': 'STEREO'
+  when '0402': '[)(]PLII MOVIE'
+  when '0403': '[)(]PLIIx MOVIE'
+  when '0404': 'Neo:6 CINEMA'
+  when '0405': 'AUTO SURROUND Straight Decode'
+  when '0406': '[)(]DIGITAL EX'
+  when '0407': '[)(]PLIIx MOVIE'
+  when '0408': 'DTS +Neo:6'
+  when '0409': 'ES MATRIX'
+  when '040a': 'ES DISCRETE'
+  when '040b': 'DTS-ES 8ch'
+  when '040c': 'XM HD Surround'
+  when '040d': 'NEURAL SURR'
+  when '040e': 'RETRIEVER AIR'
+  when '040f': 'Neo:X CINEMA'
+  when '0410': 'ES Neo:X'
+  when '0501': 'STEREO'
+  when '0502': '[)(]PLII MOVIE'
+  when '0503': '[)(]PLIIx MOVIE'
+  when '0504': 'Neo:6 CINEMA'
+  when '0505': 'ALC Straight Decode'
+  when '0506': '[)(]DIGITAL EX'
+  when '0507': '[)(]PLIIx MOVIE'
+  when '0508': 'DTS +Neo:6'
+  when '0509': 'ES MATRIX'
+  when '050a': 'ES DISCRETE'
+  when '050b': 'DTS-ES 8ch'
+  when '050c': 'XM HD Surround'
+  when '050d': 'NEURAL SURR'
+  when '050e': 'RETRIEVER AIR'
+  when '050f': 'Neo:X CINEMA'
+  when '0510': 'ES Neo:X'
+  when '0601': 'STEREO'
+  when '0602': '[)(]PLII MOVIE'
+  when '0603': '[)(]PLIIx MOVIE'
+  when '0604': 'Neo:6 CINEMA'
+  when '0605': 'STREAM DIRECT NORMAL Straight Decode'
+  when '0606': '[)(]DIGITAL EX'
+  when '0607': '[)(]PLIIx MOVIE'
+  when '0608': '(nothing)'
+  when '0609': 'ES MATRIX'
+  when '060a': 'ES DISCRETE'
+  when '060b': 'DTS-ES 8ch'
+  when '060c': 'Neo:X CINEMA'
+  when '060d': 'ES Neo:X'
+  when '0701': 'STREAM DIRECT PURE 2ch'
+  when '0702': '[)(]PLII MOVIE'
+  when '0703': '[)(]PLIIx MOVIE'
+  when '0704': 'Neo:6 CINEMA'
+  when '0705': 'STREAM DIRECT PURE Straight Decode'
+  when '0706': '[)(]DIGITAL EX'
+  when '0707': '[)(]PLIIx MOVIE'
+  when '0708': '(nothing)'
+  when '0709': 'ES MATRIX'
+  when '070a': 'ES DISCRETE'
+  when '070b': 'DTS-ES 8ch'
+  when '070c': 'Neo:X CINEMA'
+  when '070d': 'ES Neo:X'
+  when '0881': 'OPTIMUM'
+  when '0e01': 'HDMI THROUGH'
+  when '0f01': 'MULTI CH IN'
+  else
+    response
+  end
 end
 
 
+on /^(B00|E04|E06|MUT0|MUT1|PWR0|PWR1|R)$/, :miscellaneous do |response|
+  case response
+  when "B00"               : "VSX busy - retry presently"  # error responses
+  when "E04"               : "Bad command code"
+  when "E06"               : "Bad command parameter"
+  when "MUT0"              : "VSX is muted"                # in response to command '?M'
+  when "MUT1"              : "VSX is not muted"
+  when "PWR0"              : "VSX is powered up"           # in response to command '?P'
+  when "PWR1"              : "VSX is not powered up"
+  when "R"                 : "VSX OK"                      # response to bare CRLF
+  else
+    response
+  end
+end
 
-# Old stuff.. need a different paradigm
-
-# string responses:
-
-AUDIO_STATUS    = { :command_string => '?AST', :label => 'Audio Status',  :handler => lambda { |response| decode_audio_signal_info(response)} }
-DEVICE_SETTING  = { :command_string => '?F',   :label => 'Device',        :handler => lambda { |response| decode_input_device(response)} }
-TUNER_SETTING   = { :command_string => '?FR',  :label => 'Tuner',         :handler => lambda { |response| decode_tuner_setting(response)} }
-VOLUME_SETTING  = { :command_string => '?V',   :label => 'Volume',        :handler => lambda { |response| decode_audio_level(response)} }
-
-
-# symbol:
-
-ATTENTION       = { :command_string => '',     :label => 'Attention',     :handler => { 'R' => :ok } }
-
-# boolean:
-
-MUTED           = { :command_string => '?M',   :label => 'Muted?',        :handler => { 'MUT1' => false,   'MUT0' => true } }
-POWERED         = { :command_string => '?P',   :label => 'Powered?',      :handler => { 'PWR1' => false,   'PWR0' => true } }
-
-# unimplemented (string):
-
-VIDEO_STATUS    = { :command_string => '?VST', :label => 'Video Status',  :handler => nil }
