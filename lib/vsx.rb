@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+### TODO: add command logging
+
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
 
@@ -10,7 +12,7 @@ require 'volume-control'
 require 'tuner-control'
 
 class Vsx
-  DEBUG = true
+  DEBUG = false
   DIAGNOSTICS = false # for timing commands, etc
 
   DEFAULT_TIMEOUT = 0.5
@@ -34,7 +36,6 @@ class Vsx
 
   rescue Errno::ECONNREFUSED => e   # among other things, the VSX only handles one connection at a time.
     raise NoConnection, "VSX receiver at #{@hostname} not listening: #{e.message}."
-
   end
 
   # returns one of :off, :on, :unreachable
@@ -48,17 +49,23 @@ class Vsx
     return :unreachable
   end
 
+  # TODO: need to rethink what on/off returns; also need on? and off?
+
+  # turn on the VSX
+
   def on
-    return if status == :on
+    return true if status == :on
     command('PO')
-    return if persitent_command('?P', /PWR0/)
+    return true if persistent_command('?P', /PWR0/)
     raise NoResponse, "Can't power up VSX receiver at #{@hostname}"
   end
 
+  # turn off the vsx
+
   def off
-    return if status == :off
+    return true if status == :off
     command('PF')
-    return if persitent_command('?P', /PWR1/)
+    return true if persistent_command('?P', /PWR1/)
     raise NoResponse, "Can't power down VSX receiver at #{@hostname}"
   end
 
@@ -105,7 +112,7 @@ class Vsx
 
     tries.times do
       resp = command(cmd, regex)
-      STDERR.puts "persitent_command: got '#{resp}' for command '#{cmd}'" if DEBUG
+      STDERR.puts "persistent_command: got '#{resp}' for command '#{cmd}'" if DEBUG
       return regex.match(resp).captures if resp
       sleep DEFAULT_TIMEOUT
     end
