@@ -7,15 +7,15 @@ class VolumeControl
   end
 
   def report
-    return sprintf("%3.1f Db, %s", inquire_volume, inquire_mute ? 'muted' : 'not muted')
+    return sprintf("%3.1f Db, %s", db, muted ? 'muted' : 'not muted')
   end
 
-  def muted?
-    return inquire_mute
+  def muted
+    return @vsx.cmd('?M', /^MUT([01])$/)[0] == '0' ? true : false
   end
 
   def db
-    return inquire_volume
+    return decode_volume(@vsx.cmd('?V', /^VOL(\d+)$/)[0]) || -999
   end
 
   def db= value
@@ -27,58 +27,42 @@ class VolumeControl
              sprintf("%03dVL", (value/0.5 + 161).to_int)
            end
 
-    @vsx.command(code)
-    resp = @vsx.persistent_command('?V', /^VOL(\d+)$/)
-    return nil unless resp
-    db =  decode_volume(resp[0])
-    return nil unless pretty_close(value, db)
-    return db
+    return decode_volume(@vsx.cmd(code, /^VOL(\d+)$/)[0])
+  end
+
+  def muted
+    return @vsx.cmd('?M', /^MUT([01])$/)[0] == '0' ? true : false
   end
 
   def mute
     return true if muted?
-    @vsx.command('MO')
-    return @vsx.persistent_command('?M', /^(MUT0)$/) == nil ? false : true
+    return @vsx.cmd('MO', /^MUT([01])$/)[0] == '0'
   end
 
   def unmute
     return true unless muted?
-    @vsx.command('MF')
-    return @vsx.persistent_command('?M', /^(MUT1)$/) == nil ? false : true
+    return @vsx.cmd('MF', /^MUT([01])$/)[0] == '1'
   end
 
   def incr
-    @vsx.command('VU')
-    resp = @vsx.persistent_command('?V', /^VOL(\d+)$/)
-    return decode_volume(resp[0]) if resp
-    return nil
+    return decode_volume(@vsx.cmd('VU', /^VOL(\d+)$/)[0])
   end
 
   def decr
-    @vsx.command('VD')
-    resp = @vsx.persistent_command('?V', /^VOL(\d+)$/)
-    return decode_volume(resp[0]) if resp
-    return nil
+    return decode_volume(@vsx.cmd('VD', /^VOL(\d+)$/)[0])
   end
 
-  private
+  # private
 
-  def pretty_close x, y
-    (x - y).abs < 0.001
+  def pretty_close? x, y
+    return false unless [Float, Fixnum].include?(x.class) &&  [Float, Fixnum].include?(y.class)
+    (x - y).abs <= 0.5  # we can set in 0.5 dB steps
   end
   
   def decode_volume code
+    return nil unless code.class == String
+    return nil unless code =~ /^\d+$/
     return (code.to_i - 161) * 0.5
-  end
-
-  def inquire_volume
-    vol = @vsx.command_matches('?V', /^VOL(\d+)$/, 'volume inquiry')[0]
-    return decode_volume(vol)
-  end
-
-  def inquire_mute
-    bool = @vsx.command_matches('?M', /^MUT([01])$/, 'mute inquiry')[0]
-    return bool == '0' ? true : false
   end
 
 end

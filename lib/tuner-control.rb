@@ -24,8 +24,10 @@ class TunerControl
     inq = inquire
     if inq[:band] == :fm
       "FM " + sprintf("%3.1f", inq[:frequency]) + " " + inq[:units]
-    else
+    elsif  inq[:band] == :am
       "AM " + sprintf("%3.0f", inq[:frequency]) + " " + inq[:units]
+    else
+      "failed request - unknown band, unknown frequency"
     end
   end
 
@@ -34,7 +36,6 @@ class TunerControl
   def band= value
 
     rec = inquire()
-    return nil unless rec  # TODO: not necessary now, but I've plans for inquire() not to throw an error but return nil
 
     return value if value == rec[:band]
 
@@ -42,13 +43,12 @@ class TunerControl
     when :fm : code = '00TN'
     when :am : code = '01TN'
     else
-      return nil
+      return
     end
 
-    @vsx.command(code)
-    resp = @vsx.persistent_command('?FR',  /^FR([FA])(\d+)$/)
-    return nil unless resp
-    return case resp[0]
+    @vsx.cmd(code)  # doesn't really return anything interesting
+
+    return case @vsx.cmd('?FR',  /^FR([FA])(\d+)$/)[0]
            when 'F' : :fm
            when 'A' : :am
            else
@@ -58,23 +58,19 @@ class TunerControl
 
   def frequency= value
     rec = inquire()
-    return nil unless rec
-    return value if pretty_close(value, rec[:frequency])
+    return value if pretty_close?(value, rec[:frequency])
 
     code = case rec[:band]
            when :am :  sprintf("%04d", value.to_i)
            when :fm :  sprintf("%04d", (value * 100).to_i)
            end
 
-    @vsx.command('TAC')
-    code.unpack('aaaa').each { |char| @vsx.command("#{char}TP") }
-      
-    response = @vsx.persistent_command('?FR',  /^FR([FA])(\d+)$/)
-    return nil unless response
+    @vsx.cmd('TAC')
+    code.unpack('aaaa').each { |char| @vsx.cmd("#{char}TP") }
 
-    raw_band, raw_freq = response
+    raw_band, raw_freq = @vsx.cmd('?FR',  /^FR([FA])(\d+)$/)
 
-    return case raw_freq
+    return case raw_band
            when 'F': raw_freq.to_i / 100.0
            when 'A': raw_freq.to_i / 1.0
            else
@@ -88,19 +84,19 @@ class TunerControl
     return @vsx.set_input('02') == '02'
   end
 
+  # private
 
-  private
-
-  def pretty_close x, y
-    (x - y).abs < 0.001
+  def pretty_close? x, y
+    return false unless [Float, Fixnum].include?(x.class) &&  [Float, Fixnum].include?(y.class)
+    (x - y).abs <= 0.1  # we can set to 0.1 frequency
   end
   
   # return hash { :frequency => float, :band => [ :fm | :am ], :units => [ 'MHz' | 'KHz' ] } 
-  # raise VsxError on timeout or 
+  # return empty hash on error
 
   def inquire
 
-    raw_band, raw_freq = @vsx.command_matches('?FR', /^FR([FA])(\d+)$/, 'tuner inquiry')
+    raw_band, raw_freq = @vsx.cmd('?FR', /^FR([FA])(\d+)$/)
 
     case raw_band
     when 'F'
@@ -108,7 +104,7 @@ class TunerControl
     when 'A'
       return { :band => :am, :frequency => raw_freq.to_i / 1.0,   :units => 'KHz' }
     else
-      raise InvalidResponse, "Bad response ('#{raw_band}', '#{raw_freq}') from VSX at #{@vsx.hostname} for tuner inquiry"
+      return { }
     end
   end
 
