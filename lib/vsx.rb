@@ -21,7 +21,7 @@ require 'tuner-control'
 require 'dvd-control'
 
 class Vsx
-  DEBUG = true
+  DEBUG = false
   DEFAULT_TIMEOUT = 0.5
   PORT = 23
   DEFAULT_RETRYS = 5
