@@ -81,7 +81,7 @@ class Vsx
 
   def status
     resp = cmd('?P', /PWR[01]/)[0]
-    STDERR.puts "response is #{resp.inspect}"
+    STDERR.puts "response is #{resp.inspect}" if DEBUG
     return :on  if resp == 'PWR0'
     return :off if resp == 'PWR1'
     return :unreachable 
@@ -91,8 +91,8 @@ class Vsx
 
   # TODO: need to rethink what on/off returns; also need on? and off?
 
-  # Turn on the VSX; when it's off, this takes a long time to
-  # respond. The initial command PO does not get a return value.
+  # Turn on the VSX; when it's off, this takes a long time for VSX to warm up,
+  # though the command completes quickly. The initial command PO does not get a return value.
 
   def on
     return true if status == :on
@@ -180,7 +180,7 @@ class Vsx
 
     @buff += @socket.recv(4 * 1024) if (results and results[0].include? @socket)  # results nil on timeout
 
-    if @buff =~ /^(.*\r\n)(.*)$/m        # check for all completed input (ends with CRLF, aka \r\n)
+    if @buff =~ /^(.*\r\n)(.*)$/m       # check for all completed input (ends with CRLF, aka \r\n)
       @buff = $2                        # save potential partial response for later..
       @responses += $1.split(/\r\n/)    # and return all the completed responses 
     end

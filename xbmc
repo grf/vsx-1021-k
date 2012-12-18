@@ -3,6 +3,9 @@
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
 
+
+TARGET_VOLUME = -25
+
 require 'vsx'
 
 def usage
@@ -10,7 +13,11 @@ def usage
   exit -1
 end
 
-hostname = ARGV[0] || 'vsx'
+def xbmc? vsx
+  return (vsx.get_input_name == 'DVD') && (vsx.volume.db >= TARGET_VOLUME) && (not vsx.volume.muted?)
+end
+
+hostname = ARGV[0] || 'vsx.sacred.net'
 
 # usage if hostname.nil?
 # usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
@@ -18,24 +25,24 @@ hostname = ARGV[0] || 'vsx'
 begin
   vsx = Vsx.new(hostname)
 
-  puts "Status: #{vsx.status}"
+  initial_status = vsx.status
+  vsx.on
 
-  puts vsx.on
-
-  sleep 5
-  puts "Status: #{vsx.status}"
-  puts "Input: #{vsx.get_input_name}"
-  puts "Volume: #{vsx.volume.report}"
-
-  puts vsx.volume.db = -80
-  puts vsx.dvd.select
-
-  # now slowly bring it up to -30 db (this needs work)
+  if xbmc? vsx
+    puts "Already set to XBMC, exiting."
+    exit
+  end
   
-  [ -50, -47.5, -45, -42.5, -40, -37.5, -35, -32.5, -30, -27.5, -25].each { |db| puts vsx.volume.db = db; sleep 0.5 }
+  vsx.volume.db = -50
+  vsx.volume.unmute
+  vsx.dvd.select
+  
+  sleep 5 if initial_status == :off
+
+  vsx.volume.fade_in(TARGET_VOLUME)
   
 rescue => e
-  puts "oops: #{e.class}"
+  puts "Oops: #{e.class}"
   puts e.message
   puts e.backtrace
 end
