@@ -99,7 +99,7 @@ begin
     type, data = repl_read
     case type
     when :vsx
-      data.each { |vsx_response| repl_print(decode_response(vsx_response)) }
+      data.each { |vsx_response| repl_print(translate_response(vsx_response)) }
       repl_prompt
     when :cmd
       send_vsx_request data
