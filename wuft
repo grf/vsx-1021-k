@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
+
+require 'vsx'
+
+def usage
+  STDERR.puts "usage: #{$0} host"
+  exit -1
+end
+
+hostname = ARGV[0] || 'vsx'
+
+# usage if hostname.nil?
+# usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
+  
+begin
+  vsx = Vsx.new(hostname)
+
+  puts "Status: #{vsx.status}"
+
+  puts vsx.on
+
+  sleep 5
+
+  puts vsx.volume.db = -80
+  puts vsx.tuner.select
+  puts vsx.tuner.frequency = 89.1
+  puts vsx.tuner.band = :fm
+
+  # now slowly bring it up to -30 db (this needs work)
+  
+  [ -50, -47.5, -45, -42.5, -40, -37.5, -35, -32.5, -30 ].each { |db| puts vsx.volume.db = db; sleep 0.5 }
+  
+rescue => e
+  puts "oops: #{e.class}"
+  puts e.message
+  puts e.backtrace
+end
