@@ -16,10 +16,24 @@ end
 def decode_response vsx_response
   DISPATCH_TABLE.each do |parser|
     text  = (parser[:regex] =~ vsx_response) && parser[:decoder].call(vsx_response)
-    title = (parser[:name].class == String)  ? "#{parser[:name]}: " : ""
+    title = (parser[:name].class == String)  ? parser[:name] + ': ' : ''
     return title + text if text
   end
   return vsx_response
+end
+
+
+# like above, but always include the original response
+
+def translate_response vsx_response
+  DISPATCH_TABLE.each do |parser|
+    text  = (parser[:regex] =~ vsx_response) && parser[:decoder].call(vsx_response)
+    title = (parser[:name].class == String)  ? parser[:name] + ': ' : ''
+    if text
+      return "#{vsx_response} (#{title}#{text})"
+    end
+  end
+  return vsx_response 
 end
 
 
@@ -129,7 +143,7 @@ on /^AST[0-9]{43}$/, 'Audio Status' do |response|
     str += '; driving speaker channels ' + output_channels
   end
 
-  str + ' (' + response + ')'
+  str
 end
 
 # /^FR[AF](\d+)$/   -- tuner setting response (to command ?FR)
@@ -194,7 +208,7 @@ on /^VST\d{29}$/, 'Video Status' do |response|
     str += ' formatted ' + input_aspect
   end
 
-  str + ",  (#{response})"
+  str
 end
 
 
