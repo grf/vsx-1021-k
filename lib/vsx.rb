@@ -22,7 +22,7 @@ require 'dvd-control'
 
 class Vsx
   DEBUG = false
-  DEFAULT_TIMEOUT = 0.5
+  DEFAULT_TIMEOUT = 0.35
   PORT = 23
   DEFAULT_RETRYS = 5
   DECODE_INPUTS = {
@@ -54,7 +54,7 @@ class Vsx
   attr_reader :tuner, :volume, :hostname, :dvd
 
   def initialize hostname
-
+    # TODO: need a timeout here
     @hostname = hostname
     @socket = TCPSocket::new(@hostname, PORT)
     @buff = ''
@@ -123,38 +123,37 @@ class Vsx
     return DECODE_INPUTS[get_input]
   end
 
-
-  # Given a command request and an optional regular expression to
-  # match against the response, send the request to the VSX and read
-  # until the expected response is recieved - since there may be many
-  # irrelevant responses, we may have to check several (up to
-  # DEFAULT_RETRYS, or a specified number). Regardless, we give up
-  # when there's nothing left to read.
+  # Given a command REQUEST and an optional regular expression
+  # EXPECTED to match against the response, send the request to the
+  # VSX and read the queued responses to our issued REQUEST until
+  # either the expected response is recieved or until there's nothing
+  # left to read.  We do this because there may be many irrelevant
+  # responses to our REQUEST - in fact, we may get responses caused by
+  # changes to the receiver, as when someone is adjusting the volume
+  # control.
   #
-  # We always return an array, empty if there's no match, or with the
-  # matched data.  When using the default regular expression, the
-  # entirety of the first response will be returned as the only
-  # element of the array. However, there may be no response, so even
-  # the default may return an empy array.
+  # Note that our reads will wait up to DEFAULT_TIMEOUT, 500
+  # milliseconds at the time of this writing. It rarely happens,
+  # though.
+  #
+  # We always return an array, empty if there's no match against
+  # EXPECTED, or with one or more matched data.  When using the
+  # default regular expression, the entirety of the first response
+  # will be returned as the only element of the array. However, there
+  # may be no responses, so even the default regular expression may
+  # return an empy array.
 
   def cmd request, expected = /.*/, trys = DEFAULT_RETRYS
 
-    STDERR.puts "cmd: draining" if DEBUG
+    # clear any old queued responses before we issue our request:
 
     self.drain
-
-    STDERR.puts "cmd: writing #{request}" if DEBUG    
-
     self.write request
-
-    STDERR.puts "cmd: #{request} =~ #{expected.inspect}" if DEBUG
-
+    
     while response = self.read
-      STDERR.puts "cmd: #{request} count-down #{trys}, get #{translate_response response}" if DEBUG
       trys -= 1
       return [] if trys <= 0
       matches = expected.match(response)
-
       next if matches.nil?
       return  matches.to_a if matches.length == 1
       return  matches.captures
@@ -167,7 +166,7 @@ class Vsx
     @socket.close
   end
 
-  # protected
+  protected
 
   def write str = ""
     @socket.write str + "\r\n"
