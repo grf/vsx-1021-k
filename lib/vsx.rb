@@ -14,6 +14,7 @@ $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/')
 
 require 'socket'
 require 'time'
+require 'timeout'
 require 'vsx-exceptions'
 require 'vsx-utils'
 require 'volume-control'
@@ -21,8 +22,11 @@ require 'tuner-control'
 require 'dvd-control'
 
 class Vsx
+  include Timeout
+
+  CONNECTION_TIMEOUT = 2.0     # seconds
   DEBUG = false
-  DEFAULT_TIMEOUT = 0.35
+  DEFAULT_READ_TIMEOUT = 0.35  # seconds
   PORT = 23
   DEFAULT_RETRYS = 5
   DECODE_INPUTS = {
@@ -56,26 +60,39 @@ class Vsx
   def initialize hostname
     # TODO: need a timeout here
     @hostname = hostname
-    @socket = TCPSocket::new(@hostname, PORT)
+
+    # for some reason timeout wrapper doesn't return the socket name error, so let's check here:
+
+    Socket.gethostbyname(@hostname) unless @hostname =~ %r{^\d{3}\.\d{3}\.\d{3}\.\d{3}$}
+    
+    timeout(CONNECTION_TIMEOUT) do
+      @socket = TCPSocket::new(@hostname, PORT)
+    end
+
+
     @buff = ''
     @responses = []
 
-    raise NoResponse, "VSX at #{@hostname} did not respond to status check" unless cmd('', /R/)[0]
+    raise NoResponse, "VSX at #{@hostname}:#{PORT} did not respond to status check" unless cmd('', /R/)[0]
 
     @tuner  = TunerControl.new(self)
     @volume = VolumeControl.new(self)
     @dvd    = DVDControl.new(self)
 
+  rescue Timeout::Error => e
+    raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{PORT}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."    
+
   rescue SocketError => e
-    raise NoConnection, "Can't locate VSX receiver at #{@hostname}: #{e.message}."
+    raise NoConnection, "Couldn't locate VSX receiver at #{@hostname}:#{PORT}: #{e.message}."
 
   rescue Errno::ECONNREFUSED => e   # among other things, the VSX only handles one connection at a time.
-    raise NoConnection, "VSX receiver at #{@hostname} not listening: #{e.message}."
+    raise NoConnection, "VSX receiver at #{@hostname}:#{PORT} not listening: #{e.message}."
   end
 
   def to_s
     "#<VSX:#{self.object_id} #{@hostname}:#{PORT}>"
   end
+
 
   # returns one of :off, :on, :unreachable
 
@@ -132,7 +149,7 @@ class Vsx
   # changes to the receiver, as when someone is adjusting the volume
   # control.
   #
-  # Note that our reads will wait up to DEFAULT_TIMEOUT, 500
+  # Note that our reads will wait up to DEFAULT_READ_TIMEOUT, 500
   # milliseconds at the time of this writing. It rarely happens,
   # though.
   #
@@ -172,7 +189,7 @@ class Vsx
     @socket.write str + "\r\n"
   end
 
-  def read timeout = DEFAULT_TIMEOUT
+  def read timeout = DEFAULT_READ_TIMEOUT
     return @responses.shift unless @responses.empty?
 
     results = select([ @socket ], nil, nil, timeout)

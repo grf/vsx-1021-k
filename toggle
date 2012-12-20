@@ -26,5 +26,6 @@ begin
 
 
 rescue => e
-  puts "oops: #{e.class}"
+  puts "#{e.class} -  #{e.message}"
+  # puts e.backtrace
 end
