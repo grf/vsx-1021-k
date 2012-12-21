@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
+
+require 'vsx'
+
+hostname = ARGV[0] || 'vsx.sacred.net'
+  
+begin
+  vsx = Vsx.new(hostname)
+
+  status = vsx.status
+
+  puts 'Power: ' + status.to_s.upcase
+
+  exit if status != :on
+
+  puts 'Input: '  + vsx.get_input_name
+  puts 'Volume: ' + vsx.volume.report
+  puts 'Tuner: '  + vsx.tuner.report
+
+rescue => e
+  STDERR.puts "#{e.class}: #{e.message}"
+  exit -1
+end
