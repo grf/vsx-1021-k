@@ -11,43 +11,45 @@ class VolumeControl
   end
 
   def db
-    return decode_volume(@vsx.cmd('?V', /^VOL(\d+)$/)[0])
+    return decode_volume(@vsx.cmd('?V', /^VOL(\d+)$/).shift)
   end
 
-  # TODO: check that value is a number; also, we need to be careful about top sound, refuse to turn it up too high for our particualr system
+  # TODO: check that value is a number; also, we need to be careful
+  # about top sound, refuse to turn it up too high for our particualr
+  # system
 
   def db= value
     code = if value >  12.0
-             '185VL' 
+             '185VL'
            elsif value < -80.0
              '000VL'
            else
              sprintf("%03dVL", (value/0.5 + 161).to_int)
            end
 
-    return decode_volume(@vsx.cmd(code, /^VOL(\d+)$/)[0])
+    return decode_volume(@vsx.cmd(code, /^VOL(\d+)$/).shift)
   end
 
   def muted?
-    return @vsx.cmd('?M', /^MUT([01])$/)[0] == '0' ? true : false
+    return @vsx.cmd('?M', /^MUT([01])$/).shift == '0' ? true : false
   end
 
   def mute
     return true if muted?
-    return @vsx.cmd('MO', /^MUT([01])$/)[0] == '0'
+    return @vsx.cmd('MO', /^MUT([01])$/).shift == '0'
   end
 
   def unmute
     return true unless muted?
-    return @vsx.cmd('MF', /^MUT([01])$/)[0] == '1'
+    return @vsx.cmd('MF', /^MUT([01])$/).shift == '1'
   end
 
   def incr
-    return decode_volume(@vsx.cmd('VU', /^VOL(\d+)$/)[0])
+    return decode_volume(@vsx.cmd('VU', /^VOL(\d+)$/).shift)
   end
 
   def decr
-    return decode_volume(@vsx.cmd('VD', /^VOL(\d+)$/)[0])
+    return decode_volume(@vsx.cmd('VD', /^VOL(\d+)$/).shift)
   end
 
   def fade_in target_volume, pause = 0.2
@@ -85,7 +87,7 @@ class VolumeControl
     return false unless [Float, Fixnum].include?(x.class) &&  [Float, Fixnum].include?(y.class)
     (x - y).abs <= 0.5  # we can set in 0.5 dB steps
   end
-  
+
   def decode_volume code
     return nil unless code.class == String
     return nil unless code =~ /^\d+$/

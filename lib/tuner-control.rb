@@ -48,7 +48,7 @@ class TunerControl
 
     @vsx.cmd(code)  # doesn't really return anything interesting
 
-    return case @vsx.cmd('?FR',  /^FR([FA])(\d+)$/)[0]
+    return case @vsx.cmd('?FR',  /^FR([FA])(\d+)$/).shift
            when 'F' : :fm
            when 'A' : :am
            else
@@ -90,8 +90,8 @@ class TunerControl
     return false unless [Float, Fixnum].include?(x.class) &&  [Float, Fixnum].include?(y.class)
     (x - y).abs <= 0.1  # we can set to 0.1 frequency
   end
-  
-  # return hash { :frequency => float, :band => [ :fm | :am ], :units => [ 'MHz' | 'KHz' ] } 
+
+  # return hash { :frequency => float, :band => [ :fm | :am ], :units => [ 'MHz' | 'KHz' ] }
   # return empty hash on error
 
   def inquire
