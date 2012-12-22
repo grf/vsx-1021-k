@@ -29,29 +29,33 @@ require 'dvd-control'
 class Vsx
   include Timeout
 
-  CONNECTION_TIMEOUT = 2.0     # seconds
   DEBUG = false
+
+  CONNECTION_TIMEOUT = 2.0     # seconds
   DEFAULT_READ_TIMEOUT = 0.35  # seconds
   PORT = 23
   DEFAULT_RETRYS = 5
+
+  # [1] means not present on VSX 1021-k
+
   DECODE_INPUTS = {
-    '00' => 'PHONO',           # not present on VSX 1021-k
+    '00' => 'PHONO',           # [1]
     '01' => 'CD',
     '02' => 'TUNER',
     '03' => 'CD-R/TAPE',
     '04' => 'DVD',
     '05' => 'TV/SAT',
     '10' => 'Video 1',
-    '12' => 'MULTI CH IN',     # not present on VSX 1021-k
+    '12' => 'MULTI CH IN',     # [1]
     '14' => 'Video 2',
     '15' => 'DVR/BDR',
     '17' => 'iPod/USB',
     '19' => 'HDMI 1',
-    '20' => 'HDMI 2',          # not present on VSX 1021-k
-    '21' => 'HDMI 3',          # not present on VSX 1021-k
-    '22' => 'HDMI 4',          # not present on VSX 1021-k
-    '23' => 'HDMI 5',          # not present on VSX 1021-k
-    '24' => 'HDMI 6',          # not present on VSX 1021-k
+    '20' => 'HDMI 2',          # [1]
+    '21' => 'HDMI 3',          # [1]
+    '22' => 'HDMI 4',          # [1]
+    '23' => 'HDMI 5',          # [1]
+    '24' => 'HDMI 6',          # [1]
     '25' => 'BD',
     '26' => 'Home Media Gallery (Internet Radio)',
     '27' => 'SIRIUS',
@@ -59,53 +63,191 @@ class Vsx
     '33' => 'Adapter Port'
   }
 
-
+  DECODE_LISTENING_MODE = {
+    '0001' => 'STEREO (cyclic)',
+    '0010' => 'STANDARD',
+    '0009' => 'STEREO (direct set)',
+    '0011' => '(2ch source)',                                          # [1]
+    '0013' => 'PRO LOGIC2 MOVIE',
+    '0018' => 'PRO LOGIC2x MOVIE',
+    '0014' => 'PRO LOGIC2 MUSIC',
+    '0019' => 'PRO LOGIC2x MUSIC',
+    '0015' => 'PRO LOGIC2 GAME',
+    '0020' => 'PRO LOGIC2x GAME',
+    '0031' => 'PRO LOGIC2z HEIGHT',
+    '0032' => 'WIDE SURROUND MOVIE',
+    '0033' => 'WIDE SURROUND MUSIC',
+    '0012' => 'PRO LOGIC',
+    '0016' => 'Neo:6 CINEMA',
+    '0017' => 'Neo:6 MUSIC',
+    '0028' => 'XM HD SURROUND',                                        # [1]
+    '0029' => 'NEURAL SURROUND',
+    '0037' => 'Neo:X CINEMA',                                          # [1]
+    '0038' => 'Neo:X MUSIC',                                           # [1]
+    '0039' => 'Neo:X GAME',                                            # [1]
+    '0040' => 'NEURAL SURROUND+Neo:X CINEMA',                          # [1]
+    '0041' => 'NEURAL SURROUND+Neo:X MUSIC',                           # [1]
+    '0042' => 'NEURAL SURROUND+Neo:X GAME',                            # [1]
+    '0021' => '(Multi ch source)',
+    '0022' => '(Multi ch source)+DOLBY EX',
+    '0023' => '(Multi ch source)+PRO LOGIC2x MOVIE',
+    '0024' => '(Multi ch source)+PRO LOGIC2x MUSIC',
+    '0034' => '(Multi-ch Source)+PRO LOGIC2z HEIGHT',
+    '0035' => '(Multi-ch Source)+WIDE SURROUND MOVIE',
+    '0036' => '(Multi-ch Source)+WIDE SURROUND MUSIC',
+    '0025' => '(Multi ch source)DTS-ES Neo:6',
+    '0026' => '(Multi ch source)DTS-ES matrix',
+    '0027' => '(Multi ch source)DTS-ES discrete',
+    '0030' => '(Multi ch source)DTS-ES 8ch discrete',
+    '0043' => '(Multi ch source)DTS-ES Neo:X',                         # [1]
+    '0100' => 'ADVANCED SURROUND (cyclic)',
+    '0101' => 'ACTION',
+    '0103' => 'DRAMA',
+    '0102' => 'SCI-FI',
+    '0105' => 'MONO FILM',
+    '0104' => 'ENTERTAINMENT SHOW',
+    '0106' => 'EXPANDED THEATER',
+    '0116' => 'TV SURROUND',
+    '0118' => 'ADVANCED GAME',
+    '0117' => 'SPORTS',
+    '0107' => 'CLASSICAL',
+    '0110' => 'ROCK/POP',
+    '0109' => 'UNPLUGGED',
+    '0112' => 'EXTENDED STEREO',
+    '0003' => 'Front Stage Surround Advance Focus',
+    '0004' => 'Front Stage Surround Advance Wide',
+    '0153' => 'RETRIEVER AIR',
+    '0113' => 'PHONES SURROUND',
+    '0050' => 'THX (cyclic)',                                          # [1]
+    '0051' => 'PROLOGIC + THX CINEMA',                                 # [1]
+    '0052' => 'PL2 MOVIE + THX CINEMA',                                # [1]
+    '0053' => 'Neo:6 CINEMA + THX CINEMA',                             # [1]
+    '0054' => 'PL2x MOVIE + THX CINEMA',                               # [1]
+    '0092' => 'PL2z HEIGHT + THX CINEMA',                              # [1]
+    '0055' => 'THX SELECT2 GAMES',                                     # [1]
+    '0068' => 'THX CINEMA (for 2ch)',                                  # [1]
+    '0069' => 'THX MUSIC (for 2ch)',                                   # [1]
+    '0070' => 'THX GAMES (for 2ch)',                                   # [1]
+    '0071' => 'PL2 MUSIC + THX MUSIC',                                 # [1]
+    '0072' => 'PL2x MUSIC + THX MUSIC',                                # [1]
+    '0093' => 'PL2z HEIGHT + THX MUSIC',                               # [1]
+    '0073' => 'Neo:6 MUSIC + THX MUSIC',                               # [1]
+    '0074' => 'PL2 GAME + THX GAMES',                                  # [1]
+    '0075' => 'PL2x GAME + THX GAMES',                                 # [1]
+    '0094' => 'PL2z HEIGHT + THX GAMES',                               # [1]
+    '0076' => 'THX ULTRA2 GAMES',                                      # [1]
+    '0077' => 'PROLOGIC + THX MUSIC',                                  # [1]
+    '0078' => 'PROLOGIC + THX GAMES',                                  # [1]
+    '0201' => 'Neo:X CINEMA + THX CINEMA',                             # [1]
+    '0202' => 'Neo:X MUSIC + THX MUSIC',                               # [1]
+    '0203' => 'Neo:X GAME + THX GAMES',                                # [1]
+    '0056' => 'THX CINEMA (for multi ch)',                             # [1]
+    '0057' => 'THX SURROUND EX (for multi ch)',                        # [1]
+    '0058' => 'PL2x MOVIE + THX CINEMA (for multi ch)',                # [1]
+    '0095' => 'PL2z HEIGHT + THX CINEMA (for multi ch)',               # [1]
+    '0059' => 'ES Neo:6 + THX CINEMA (for multi ch)',                  # [1]
+    '0060' => 'ES MATRIX + THX CINEMA (for multi ch)',                 # [1]
+    '0061' => 'ES DISCRETE + THX CINEMA (for multi ch)',               # [1]
+    '0067' => 'ES 8ch DISCRETE + THX CINEMA (for multi ch)',           # [1]
+    '0062' => 'THX SELECT2 CINEMA (for multi ch)',                     # [1]
+    '0063' => 'THX SELECT2 MUSIC (for multi ch)',                      # [1]
+    '0064' => 'THX SELECT2 GAMES (for multi ch)',                      # [1]
+    '0065' => 'THX ULTRA2 CINEMA (for multi ch)',                      # [1]
+    '0066' => 'THX ULTRA2 MUSIC (for multi ch)',                       # [1]
+    '0079' => 'THX ULTRA2 GAMES (for multi ch)',                       # [1]
+    '0080' => 'THX MUSIC (for multi ch)',                              # [1]
+    '0081' => 'THX GAMES (for multi ch)',                              # [1]
+    '0082' => 'PL2x MUSIC + THX MUSIC (for multi ch)',                 # [1]
+    '0096' => 'PL2z HEIGHT + THX MUSIC (for multi ch)',                # [1]
+    '0083' => 'EX + THX GAMES (for multi ch)',                         # [1]
+    '0097' => 'PL2z HEIGHT + THX GAMES (for multi ch)',                # [1]
+    '0084' => 'Neo:6 + THX MUSIC (for multi ch)',                      # [1]
+    '0085' => 'Neo:6 + THX GAMES (for multi ch)',                      # [1]
+    '0086' => 'ES MATRIX + THX MUSIC (for multi ch)',                  # [1]
+    '0087' => 'ES MATRIX + THX GAMES (for multi ch)',                  # [1]
+    '0088' => 'ES DISCRETE + THX MUSIC (for multi ch)',                # [1]
+    '0089' => 'ES DISCRETE + THX GAMES (for multi ch)',                # [1]
+    '0090' => 'ES 8CH DISCRETE + THX MUSIC (for multi ch)',            # [1]
+    '0091' => 'ES 8CH DISCRETE + THX GAMES (for multi ch)',            # [1]
+    '0204' => 'Neo:X + THX CINEMA (for multi ch)',                     # [1]
+    '0205' => 'Neo:X + THX MUSIC (for multi ch)',                      # [1]
+    '0206' => 'Neo:X + THX GAMES (for multi ch)',                      # [1]
+    '0005' => 'AUTO SURR/STREAM DIRECT (cyclic)',
+    '0006' => 'AUTO SURROUND',
+    '0151' => 'Auto Level Control (A.L.C.)',
+    '0007' => 'DIRECT',
+    '0008' => 'PURE DIRECT',
+    '0152' => 'OPTIMUM SURROUND',                                     # [1]
+  }
+  
   attr_reader :tuner, :volume, :hostname, :dvd
 
   def initialize hostname
     @hostname = hostname
-
-    # for some reason timeout wrapper doesn't return a socket name error, so let's check here:
-
+    
+    # For some reason the timeout wrapper doesn't return a socket name error, so let's check (caught in rescue).
+    
     Socket.gethostbyname(@hostname) unless @hostname =~ %r{^\d{3}\.\d{3}\.\d{3}\.\d{3}$}
-
+    
     timeout(CONNECTION_TIMEOUT) do
       @socket = TCPSocket::new(@hostname, PORT)
     end
-
+    
     @buff = ''
     @responses = []
-
+    
     raise NoResponse, "VSX at #{@hostname}:#{PORT} did not respond to status check" unless cmd('', /R/).shift
-
+    
     @tuner  = TunerControl.new(self)
     @volume = VolumeControl.new(self)
     @dvd    = DVDControl.new(self)
-
+    
   rescue Timeout::Error => e
     raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{PORT}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."
-
+    
   rescue SocketError => e
     raise NoConnection, "Couldn't locate VSX receiver at #{@hostname}:#{PORT}: #{e.message}."
-
+    
   rescue Errno::ECONNREFUSED => e   # The VSX only handles one connection at a time.
     raise NoConnection, "VSX receiver at #{@hostname}:#{PORT} not listening: #{e.message}."
   end
-
+  
   def to_s
     "#<VSX:#{self.object_id} #{@hostname}:#{PORT}>"
   end
+  
+  
+  def report
 
+    case status_helper
+      
+    when :off
+      puts "Powered off"
+    
+    when :unreachable
+      puts "VSX receiver is unreachable"
+
+    when :on
+      puts 'Input: '  + get_input_name
+      puts 'Volume: ' + volume.report
+      puts 'Tuner: '  + tuner.report
+      puts 'Listening Mode: ' + listening_profile
+      puts 'Speakers: ' +  speakers
+    end
+  end    
 
   # returns one of :off, :on, :unreachable
 
-  def status
-    resp = cmd('?P', /PWR[01]/).shift
-    return :on  if resp == 'PWR0'
-    return :off if resp == 'PWR1'
-    return :unreachable
-  rescue => e
-    return :unreachable
+  def on?
+    status_helper == :on
+  end
+  
+  def off?
+    status_helper == :off
+  end
+
+  def unreachable?
+    status_helper == :unreachable
   end
 
   # TODO: need to rethink what on/off returns; also need on? and off?
@@ -127,9 +269,9 @@ class Vsx
   # does not get a return message.
 
   def on
-    return true if status == :on
+    return true if on?
     cmd('PO')
-    return cmd('?P', /PWR[01]/, 10).shfit == 'PWR0'
+    return cmd('?P', /PWR[01]/, 10).shift == 'PWR0'
   end
 
 
@@ -137,7 +279,7 @@ class Vsx
   # are already powered-down.
 
   def off
-    return true if status == :off
+    return true if off?
     return cmd('PF', /PWR[01]/).shift == 'PWR1'
   end
 
@@ -160,6 +302,38 @@ class Vsx
 
   def get_input_name
     return DECODE_INPUTS[get_input]
+  end
+
+  # display()
+  #
+  # Return what's on the display of the vsx receiver, or, if unavailable, nil
+  
+  def display
+    encoded_asterisks, encoded_text = cmd('?FL', /^FL([0-9A-F]{2})([0-9A-F]{28})$/)
+    return nil unless encoded_asterisks && encoded_text
+    
+    str = case encoded_asterisks
+          when '00': '  '
+          when '01': ' *'
+          when '02': '* '
+          when '03': '**'
+          else; ''
+          end
+    
+    return str + encoded_text.unpack('a2' * 14).map { |c| c.to_i(16).chr }.join
+  end
+
+  def speakers
+    return case cmd('?SPK', /^SPK([0-3])$/).shift
+           when '0': 'Off'
+           when '1': 'A'
+           when '2': 'B'
+           when '3': 'A+B'
+           end
+  end
+
+  def listening_profile
+    return DECODE_LISTENING_MODE[cmd('?S', /^SR([0-9]{4})$/).shift]
   end
 
   # cmd(REQUEST, [ EXPECTED ], [ TRYS ]) sends a command to the VSX
@@ -205,10 +379,11 @@ class Vsx
   end
 
   def close
-    @socket.close
+    @socket.close unless @socket.closed?
   end
 
-  protected
+
+  ##### protected
 
   # write(STR)
   # 
@@ -242,16 +417,26 @@ class Vsx
     @responses.shift  # return next queued message or nil if we've timed out
   end
 
-  # drain() removes any queued output
+  # drain() removes any queued output.
   #
-  # The vsx can produce status messages at
-  # anytime (e.g., someone adjusts volume), or multiple status
-  # messages (on switching input, say) so we need this to clear old
-  # responses before we attempt a command/response.
+  # The vsx can produce status messages at any time (e.g., someone
+  # adjusts volume), or multiple status messages (on switching input,
+  # say) so we need this to clear old responses before we attempt a
+  # command/response.
 
   def drain
     while resp = self.read(0.05)
     end
+  end
+
+
+  def status_helper
+    resp = cmd('?P', /PWR[01]/).shift
+    return :on  if resp == 'PWR0'
+    return :off if resp == 'PWR1'
+    return :unreachable
+  rescue => e
+    return :unreachable
   end
 
 end
