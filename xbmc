@@ -25,7 +25,8 @@ hostname = ARGV[0] || 'vsx.sacred.net'
 begin
   vsx = Vsx.new(hostname)
 
-  initial_status = vsx.status
+  was_off = vsx.off?
+
   vsx.on
 
   if xbmc? vsx
@@ -37,7 +38,7 @@ begin
   vsx.volume.unmute
   vsx.dvd.select
   
-  sleep 5 if initial_status == :off
+  sleep 5 if was_off
 
   vsx.volume.fade_in(TARGET_VOLUME)
   

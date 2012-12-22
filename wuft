@@ -25,7 +25,8 @@ end
   
 begin
   vsx = Vsx.new(hostname)
-  initial_status = vsx.status
+
+  was_off = vsx.off?
 
   vsx.on
 
@@ -41,7 +42,7 @@ begin
   vsx.tuner.frequency = 89.1
   vsx.tuner.band = :fm
   
-  sleep 5 if initial_status == :off 
+  sleep 5 if was_off
 
   vsx.volume.fade_in(TARGET_VOLUME)
   
