@@ -5,6 +5,7 @@ $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/')
 
 
 TARGET_VOLUME = -25
+STEREO = '0009'
 
 require 'vsx'
 
@@ -14,14 +15,14 @@ def usage
 end
 
 def xbmc? vsx
-  return (vsx.get_input_name == 'DVD') && (vsx.volume.db >= TARGET_VOLUME) && (not vsx.volume.muted?)
+  return (vsx.input_name == 'DVD') && (vsx.volume.db >= TARGET_VOLUME) && (not vsx.volume.muted?) && (vsx.listening_mode == '0009')
 end
 
 hostname = ARGV[0] || 'vsx.sacred.net'
 
 # usage if hostname.nil?
 # usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
-  
+
 begin
   vsx = Vsx.new(hostname)
 
@@ -33,15 +34,16 @@ begin
     puts "Already set to XBMC, exiting."
     exit
   end
-  
+
   vsx.volume.db = -50
   vsx.volume.unmute
   vsx.dvd.select
-  
+  vsx.listening_mode = STEREO
+
   sleep 5 if was_off
 
-  vsx.volume.fade_in(TARGET_VOLUME)
-  
+  vsx.volume.fade_in TARGET_VOLUME
+
 rescue => e
   puts "Oops: #{e.class}"
   puts e.message

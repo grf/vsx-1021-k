@@ -81,7 +81,7 @@ class TunerControl
   # Tell the VSX to use the tuner as input; returns true if succesful
 
   def select
-    return @vsx.set_input('02') == '02'
+    return (@vsx.input = '02') == '02'
   end
 
   # private

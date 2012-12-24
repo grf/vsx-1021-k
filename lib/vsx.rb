@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+### TODO: currently, need to reset listenting mode
+
 ### TODO: add command logging
 
 ### TODO: add some design notes - esp. that we never raise on
@@ -62,6 +64,10 @@ class Vsx
     '31' => 'HDMI (cyclic)',
     '33' => 'Adapter Port'
   }
+
+  # The listening mode codes can be used to set listening mode; we can
+  # also get listening mode responses tuned more for display (see
+  # DECODE_LISTENING_DISPLAY)
 
   DECODE_LISTENING_MODE = {
     '0001' => 'STEREO (cyclic)',
@@ -179,69 +185,240 @@ class Vsx
     '0008' => 'PURE DIRECT',
     '0152' => 'OPTIMUM SURROUND',                                     # [1]
   }
-  
+
+  # listening display codes are not usable for setting
+
+  DECODE_LISTENING_DISPLAY = {
+    '0101' => '[)(]PLIIx MOVIE',
+    '0102' => '[)(]PLII MOVIE',
+    '0103' => '[)(]PLIIx MUSIC',
+    '0104' => '[)(]PLII MUSIC',
+    '0105' => '[)(]PLIIx GAME',
+    '0106' => '[)(]PLII GAME',
+    '0107' => '[)(]PROLOGIC',
+    '0108' => 'Neo:6 CINEMA',
+    '0109' => 'Neo:6 MUSIC',
+    '010a' => 'XM HD Surround',
+    '010b' => 'NEURAL SURR',
+    '010c' => '2ch Straight Decode',
+    '010d' => '[)(]PLIIz HEIGHT',
+    '010e' => 'WIDE SURR MOVIE',
+    '010f' => 'WIDE SURR MUSIC',
+    '0110' => 'STEREO',
+    '0111' => 'Neo:X CINEMA',
+    '0112' => 'Neo:X MUSIC',
+    '0113' => 'Neo:X GAME',
+    '0114' => 'NEURAL SURROUND+Neo:X CINEMA',
+    '0115' => 'NEURAL SURROUND+Neo:X MUSIC',
+    '0116' => 'NEURAL SURROUND+Neo:X GAMES',
+    '1101' => '[)(]PLIIx MOVIE',
+    '1102' => '[)(]PLIIx MUSIC',
+    '1103' => '[)(]DIGITAL EX',
+    '1104' => 'DTS +Neo:6 / DTS-HD +Neo:6',
+    '1105' => 'ES MATRIX',
+    '1106' => 'ES DISCRETE',
+    '1107' => 'DTS-ES 8ch',
+    '1108' => 'multi ch Straight Decode',
+    '1109' => '[)(]PLIIz HEIGHT',
+    '110a' => 'WIDE SURR MOVIE',
+    '110b' => 'WIDE SURR MUSIC',
+    '110c' => 'ES Neo:X',
+    '0201' => 'ACTION',
+    '0202' => 'DRAMA',
+    '0203' => 'SCI-FI',
+    '0204' => 'MONOFILM',
+    '0205' => 'ENT.SHOW',
+    '0206' => 'EXPANDED',
+    '0207' => 'TV SURROUND',
+    '0208' => 'ADVANCEDGAME',
+    '0209' => 'SPORTS',
+    '020a' => 'CLASSICAL',
+    '020b' => 'ROCK/POP',
+    '020c' => 'UNPLUGGED',
+    '020d' => 'EXT.STEREO',
+    '020e' => 'PHONES SURR.',
+    '020f' => 'FRONT STAGE SURROUND ADVANCE FOCUS',
+    '0210' => 'FRONT STAGE SURROUND ADVANCE WIDE',
+    '0211' => 'SOUND RETRIEVER AIR',
+    '0301' => '[)(]PLIIx MOVIE +THX',
+    '0302' => '[)(]PLII MOVIE +THX',
+    '0303' => '[)(]PL +THX CINEMA',
+    '0304' => 'Neo:6 CINEMA +THX',
+    '0305' => 'THX CINEMA',
+    '0306' => '[)(]PLIIx MUSIC +THX',
+    '0307' => '[)(]PLII MUSIC +THX',
+    '0308' => '[)(]PL +THX MUSIC',
+    '0309' => 'Neo:6 MUSIC +THX',
+    '030a' => 'THX MUSIC',
+    '030b' => '[)(]PLIIx GAME +THX',
+    '030c' => '[)(]PLII GAME +THX',
+    '030d' => '[)(]PL +THX GAMES',
+    '030e' => 'THX ULTRA2 GAMES',
+    '030f' => 'THX SELECT2 GAMES',
+    '0310' => 'THX GAMES',
+    '0311' => '[)(]PLIIz +THX CINEMA',
+    '0312' => '[)(]PLIIz +THX MUSIC',
+    '0313' => '[)(]PLIIz +THX GAMES',
+    '0314' => 'Neo:X CINEMA + THX CINEMA',
+    '0315' => 'Neo:X MUSIC + THX MUSIC',
+    '0316' => 'Neo:X GAMES + THX GAMES',
+    '1301' => 'THX Surr EX',
+    '1302' => 'Neo:6 +THX CINEMA',
+    '1303' => 'ES MTRX +THX CINEMA',
+    '1304' => 'ES DISC +THX CINEMA',
+    '1305' => 'ES 8ch +THX CINEMA',
+    '1306' => '[)(]PLIIx MOVIE +THX',
+    '1307' => 'THX ULTRA2 CINEMA',
+    '1308' => 'THX SELECT2 CINEMA',
+    '1309' => 'THX CINEMA',
+    '130a' => 'Neo:6 +THX MUSIC',
+    '130b' => 'ES MTRX +THX MUSIC',
+    '130c' => 'ES DISC +THX MUSIC',
+    '130d' => 'ES 8ch +THX MUSIC',
+    '130e' => '[)(]PLIIx MUSIC +THX',
+    '130f' => 'THX ULTRA2 MUSIC',
+    '1310' => 'THX SELECT2 MUSIC',
+    '1311' => 'THX MUSIC',
+    '1312' => 'Neo:6 +THX GAMES',
+    '1313' => 'ES MTRX +THX GAMES',
+    '1314' => 'ES DISC +THX GAMES',
+    '1315' => 'ES 8ch +THX GAMES',
+    '1316' => '[)(]EX +THX GAMES',
+    '1317' => 'THX ULTRA2 GAMES',
+    '1318' => 'THX SELECT2 GAMES',
+    '1319' => 'THX GAMES',
+    '131a' => '[)(]PLIIz +THX CINEMA',
+    '131b' => '[)(]PLIIz +THX MUSIC',
+    '131c' => '[)(]PLIIz +THX GAMES',
+    '131d' => 'Neo:X + THX CINEMA',
+    '131e' => 'Neo:X + THX MUSIC',
+    '131f' => 'Neo:X + THX GAMES',
+    '0401' => 'STEREO',
+    '0402' => '[)(]PLII MOVIE',
+    '0403' => '[)(]PLIIx MOVIE',
+    '0404' => 'Neo:6 CINEMA',
+    '0405' => 'AUTO SURROUND Straight Decode',
+    '0406' => '[)(]DIGITAL EX',
+    '0407' => '[)(]PLIIx MOVIE',
+    '0408' => 'DTS +Neo:6',
+    '0409' => 'ES MATRIX',
+    '040a' => 'ES DISCRETE',
+    '040b' => 'DTS-ES 8ch',
+    '040c' => 'XM HD Surround',
+    '040d' => 'NEURAL SURR',
+    '040e' => 'RETRIEVER AIR',
+    '040f' => 'Neo:X CINEMA',
+    '0410' => 'ES Neo:X',
+    '0501' => 'STEREO',
+    '0502' => '[)(]PLII MOVIE',
+    '0503' => '[)(]PLIIx MOVIE',
+    '0504' => 'Neo:6 CINEMA',
+    '0505' => 'ALC Straight Decode',
+    '0506' => '[)(]DIGITAL EX',
+    '0507' => '[)(]PLIIx MOVIE',
+    '0508' => 'DTS +Neo:6',
+    '0509' => 'ES MATRIX',
+    '050a' => 'ES DISCRETE',
+    '050b' => 'DTS-ES 8ch',
+    '050c' => 'XM HD Surround',
+    '050d' => 'NEURAL SURR',
+    '050e' => 'RETRIEVER AIR',
+    '050f' => 'Neo:X CINEMA',
+    '0510' => 'ES Neo:X',
+    '0601' => 'STEREO',
+    '0602' => '[)(]PLII MOVIE',
+    '0603' => '[)(]PLIIx MOVIE',
+    '0604' => 'Neo:6 CINEMA',
+    '0605' => 'STREAM DIRECT NORMAL Straight Decode',
+    '0606' => '[)(]DIGITAL EX',
+    '0607' => '[)(]PLIIx MOVIE',
+    '0608' => '(nothing)',
+    '0609' => 'ES MATRIX',
+    '060a' => 'ES DISCRETE',
+    '060b' => 'DTS-ES 8ch',
+    '060c' => 'Neo:X CINEMA',
+    '060d' => 'ES Neo:X',
+    '0701' => 'STREAM DIRECT PURE 2ch',
+    '0702' => '[)(]PLII MOVIE',
+    '0703' => '[)(]PLIIx MOVIE',
+    '0704' => 'Neo:6 CINEMA',
+    '0705' => 'STREAM DIRECT PURE Straight Decode',
+    '0706' => '[)(]DIGITAL EX',
+    '0707' => '[)(]PLIIx MOVIE',
+    '0708' => '(nothing)',
+    '0709' => 'ES MATRIX',
+    '070a' => 'ES DISCRETE',
+    '070b' => 'DTS-ES 8ch',
+    '070c' => 'Neo:X CINEMA',
+    '070d' => 'ES Neo:X',
+    '0881' => 'OPTIMUM',
+    '0e01' => 'HDMI THROUGH',
+    '0f01' => 'MULTI CH IN'
+  }
+
   attr_reader :tuner, :volume, :hostname, :dvd
 
   def initialize hostname
     @hostname = hostname
-    
+
     # For some reason the timeout wrapper doesn't return a socket name error, so let's check (caught in rescue).
-    
+
     Socket.gethostbyname(@hostname) unless @hostname =~ %r{^\d{3}\.\d{3}\.\d{3}\.\d{3}$}
-    
+
     timeout(CONNECTION_TIMEOUT) do
       @socket = TCPSocket::new(@hostname, PORT)
     end
-    
+
     @buff = ''
     @responses = []
-    
+
     raise NoResponse, "VSX at #{@hostname}:#{PORT} did not respond to status check" unless cmd('', /R/).shift
-    
+
     @tuner  = TunerControl.new(self)
     @volume = VolumeControl.new(self)
     @dvd    = DVDControl.new(self)
-    
+
   rescue Timeout::Error => e
     raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{PORT}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."
-    
+
   rescue SocketError => e
     raise NoConnection, "Couldn't locate VSX receiver at #{@hostname}:#{PORT}: #{e.message}."
-    
+
   rescue Errno::ECONNREFUSED => e   # The VSX only handles one connection at a time.
     raise NoConnection, "VSX receiver at #{@hostname}:#{PORT} not listening: #{e.message}."
   end
-  
+
   def to_s
     "#<VSX:#{self.object_id} #{@hostname}:#{PORT}>"
   end
-  
-  
+
+
   def report
 
     case status_helper
-      
+
     when :off
       puts "Powered off"
-    
+
     when :unreachable
       puts "VSX receiver is unreachable"
 
     when :on
-      puts 'Input: '  + get_input_name
+      puts 'Input: '  + input_name
       puts 'Volume: ' + volume.report
       puts 'Tuner: '  + tuner.report
-      puts 'Listening Mode: ' + listening_profile
+      puts 'Listening Mode: ' + listening_mode_display + ',  more exactly ' + listening_mode_name
       puts 'Speakers: ' +  speakers
+      puts 'Audio: ' + audio_status_report
     end
-  end    
+  end
 
   # returns one of :off, :on, :unreachable
 
   def on?
     status_helper == :on
   end
-  
+
   def off?
     status_helper == :off
   end
@@ -285,33 +462,33 @@ class Vsx
 
   # TODO: need a friendlier version of this...
 
-  # set_input(CODE) changes the input device used by the vsx
+  # input = CODE changes the input device used by the vsx
   # receiver. CODEs indicate devices such as tuner ('02'), dvd ('04),
   # etc.  This is used primarily by controllers (TunerControl,
   # DVDControl, etc) in their Control#select method.  See the
   # DECODE_INPUTS hash for the complete list.
 
-  def set_input code
-    return code if get_input == code
-    return cmd("#{code}FN", /FN(#{code})/).shift == code
+  def input= value
+    return value if input == value
+    return cmd("#{value}FN", /FN(#{value})/).shift
   end
 
-  def get_input
+  def input
     return cmd('?F', /FN(\d+)/).shift
   end
 
-  def get_input_name
-    return DECODE_INPUTS[get_input]
+  def input_name
+    return DECODE_INPUTS[input]
   end
 
   # display()
   #
   # Return what's on the display of the vsx receiver, or, if unavailable, nil
-  
+
   def display
     encoded_asterisks, encoded_text = cmd('?FL', /^FL([0-9A-F]{2})([0-9A-F]{28})$/)
     return nil unless encoded_asterisks && encoded_text
-    
+
     str = case encoded_asterisks
           when '00': '  '
           when '01': ' *'
@@ -319,7 +496,7 @@ class Vsx
           when '03': '**'
           else; ''
           end
-    
+
     return str + encoded_text.unpack('a2' * 14).map { |c| c.to_i(16).chr }.join
   end
 
@@ -332,9 +509,117 @@ class Vsx
            end
   end
 
-  def listening_profile
-    return DECODE_LISTENING_MODE[cmd('?S', /^SR([0-9]{4})$/).shift]
+  # gets listening_mode
+
+  def listening_mode
+    return cmd('?S', /^SR([0-9]{4})$/).shift
   end
+
+  # listening_mode = CODE
+  #
+  # Some of the codes are not sticky, so '0001' initially sets to
+  # '0001' => 'STEREO (cyclic)' but quickly resets to '0009' =>
+  # 'STEREO (direct set)'.  '0010' => 'STANDARD' works similarly.
+
+  def listening_mode= value
+    cmd("#{value}SR", /^SR([0-9]{4})$/).shift
+  end
+
+  def listening_mode_name
+    return DECODE_LISTENING_MODE[listening_mode]
+  end
+
+  # Since the codes from display listening mode commands aren't usable
+  # for setting, we only have a decode method.
+
+  def listening_mode_display
+    return DECODE_LISTENING_DISPLAY[cmd('?L', /^LM(\d{4})$/).shift]
+  end
+
+  def audio_status
+
+    input_signal_code, input_frequency_code, input_channels_code, output_channels_code \
+       = cmd('?AST', /^AST(..)(..)(.{16}).....(.{13}).....$/)
+
+    input_signal = case input_signal_code
+                   when '00': 'analog'
+                   when '01': 'analog'
+                   when '02': 'analog'
+                   when '03': 'PCM'
+                   when '04': 'PCM'
+                   when '05': 'DOLBY DIGITAL'
+                   when '06': 'DTS'
+                   when '07': 'DTS-ES Matrix'
+                   when '08': 'DTS-ES Discrete'
+                   when '09': 'DTS 96/24'
+                   when '10': 'DTS 96/24 ES Matrix'
+                   when '11': 'DTS 96/24 ES Discrete'
+                   when '12': 'MPEG-2 AAC'
+                   when '13': 'WMA9 Pro'
+                   when '14': 'DSD->PCM'
+                   when '15': 'HDMI pass-through'
+                   when '16': 'DOLBY DIGITAL PLUS'
+                   when '17': 'DOLBY TrueHD'
+                   when '18': 'DTS EXPRESS'
+                   when '19': 'DTS-HD Master Audio'
+                   when '20': 'DTS-HD High Resolution'
+                   when '21': 'DTS-HD High Resolution'
+                   when '22': 'DTS-HD High Resolution'
+                   when '23': 'DTS-HD High Resolution'
+                   when '24': 'DTS-HD High Resolution'
+                   when '25': 'DTS-HD High Resolution'
+                   when '26': 'DTS-HD High Resolution'
+                   when '27': 'DTS-HD Master Audio'
+                   else
+                     "signal code #{input_signal_code}"
+                   end
+
+    input_frequency = case input_frequency_code
+                      when '00': '32 kHz'
+                      when '01': '44.1 kHz'
+                      when '02': '48 kHz'
+                      when '03': '88.2 kHz'
+                      when '04': '96 kHz'
+                      when '05': '176.4 kHz'
+                      when '06': '192 kHz'
+                      else
+                        "frequency code #{input_frequency_code}"
+                      end
+
+    input_channel_names = [ 'L', 'C', 'R', 'SL', 'SR', 'SBL', 'S', 'SBR', 'LFE', 'FHL', 'FHR', 'FWL', 'FWR', 'XL', 'XC', 'XR' ]
+    input_channels_supplied = decode_status_string(input_channels_code, input_channel_names)
+
+    output_channel_names = [ 'L', 'C', 'R', 'SL', 'SR', 'SBL', 'SB', 'SBR', 'SW', 'FHL', 'FHR', 'FWL', 'FWR' ]
+    output_channels_driven = decode_status_string(output_channels_code, output_channel_names)
+
+
+    return {
+      :input_channels  => input_channels_supplied,
+      :input_frequency => input_frequency,
+      :input_signal    => input_signal,
+      :output_channels => output_channels_driven
+    }
+
+  end
+
+
+  def audio_status_report
+
+    data = audio_status
+
+    report = data[:input_signal] + " input signal at " + data[:input_frequency]
+
+    if data[:input_channels].length > 0
+      report += " with " + data[:input_channels].join(',') + " channels"
+    end
+
+    if data[:output_channels].length > 0
+      report += '; driving speaker channels ' + data[:output_channels].join(',')
+    end
+
+    report
+  end
+
 
   # cmd(REQUEST, [ EXPECTED ], [ TRYS ]) sends a command to the VSX
   # receiver.
@@ -386,7 +671,7 @@ class Vsx
   ##### protected
 
   # write(STR)
-  # 
+  #
   # Send the command STR to the vsx receiver.
 
   def write str = ""
@@ -438,5 +723,37 @@ class Vsx
   rescue => e
     return :unreachable
   end
+
+  # code_unwrapper STR
+  #
+  # Helper for unpacking codes, used in decode_status_string()
+  #
+  # Take a string, e.g. '0110', and return an array of booleans, true
+  # wherever a character is '1', here [ false, true, true, false ]
+
+  def code_unwrapper str
+    str.unpack('a' * str.length).map { |code| code == '1' }
+  end
+
+
+  # decode_status_string CODE_STRING, DOC_ARRAY
+  #
+  # Help for unpacking ASCII status codes in a string, and returning
+  # associated doc strings, for example:
+  #
+  #   CODE_STRING = '101', DOC_ARRAY = [ 'one', 'two', 'three' ], returns [ 'one', 'three' ]
+  #
+  # That is, return the elements from DOC_ARRAY that correspond to
+  # positions in CODE_STRING with characters of '1'.
+
+  def decode_status_string code_string, doc_array
+    results = []
+    code_unwrapper(code_string).each do |bool|
+      doco = doc_array.shift
+      results.push doco if bool
+    end
+    return results
+  end
+
 
 end

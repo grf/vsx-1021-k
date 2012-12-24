@@ -9,7 +9,7 @@ class DVDControl
   # Tell the VSX to use the DVD as input; returns true if succesful
 
   def select
-    return @vsx.set_input('04')
+    return (@vsx.input = '04') == '04'
   end
 
 end

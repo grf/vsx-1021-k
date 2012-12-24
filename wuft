@@ -16,13 +16,14 @@ hostname = ARGV[0] || 'vsx.sacred.net'
 # usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
 
 TARGET_VOLUME = -30
+STEREO = '0009'
 
 def wuft? vsx
-  return (vsx.get_input_name == 'TUNER') && (vsx.volume.db >= TARGET_VOLUME) && \
-  (vsx.tuner.frequency == 89.1) && (vsx.tuner.band == :fm) && (not vsx.volume.muted?)
+  return (vsx.input_name == 'TUNER') && (vsx.volume.db >= TARGET_VOLUME) && (vsx.listening_mode == '0009') \
+      && (vsx.tuner.frequency == 89.1) && (vsx.tuner.band == :fm) && (not vsx.volume.muted?)
 end
 
-  
+
 begin
   vsx = Vsx.new(hostname)
 
@@ -35,17 +36,19 @@ begin
     exit
   end
 
+
   vsx.volume.db = -50
   vsx.volume.unmute
 
+  vsx.listening_mode = STEREO
   vsx.tuner.select
   vsx.tuner.frequency = 89.1
   vsx.tuner.band = :fm
-  
+
   sleep 5 if was_off
 
-  vsx.volume.fade_in(TARGET_VOLUME)
-  
+  vsx.volume.fade_in TARGET_VOLUME
+
 rescue => e
   puts "Oops: #{e.class}"
   puts e.message
