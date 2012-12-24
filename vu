@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
+
+require 'vsx'
+
+hostname = ARGV[0] || 'vsx.sacred.net'
+
+
+begin
+  vsx = Vsx.new(hostname)
+  if vsx.off?
+    STDERR.puts 'VSX receiver is off, aborting'
+    exit -1
+  end
+
+  vsx.volume.incr
+
+rescue => e
+  puts "Oops: #{e.class}"
+  puts e.message
+  puts e.backtrace
+end
