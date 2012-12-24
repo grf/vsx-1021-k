@@ -19,7 +19,7 @@ TARGET_VOLUME = -30
 STEREO = '0009'
 
 def wuft? vsx
-  return (vsx.input_name == 'TUNER') && (vsx.volume.db >= TARGET_VOLUME) && (vsx.listening_mode == '0009') \
+  return (vsx.input_name == 'TUNER') && (vsx.volume.db >= TARGET_VOLUME) && (vsx.listening_mode == STEREO) \
       && (vsx.tuner.frequency == 89.1) && (vsx.tuner.band == :fm) && (not vsx.volume.muted?)
 end
 

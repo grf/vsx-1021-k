@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
-### TODO: currently, need to reset listenting mode
+
+### TODO: handle constants sensibly.  VSX::DEVICES.tuner, etc?
 
 ### TODO: add command logging
 
@@ -586,7 +587,13 @@ class Vsx
                         "frequency code #{input_frequency_code}"
                       end
 
-    input_channel_names = [ 'L', 'C', 'R', 'SL', 'SR', 'SBL', 'S', 'SBR', 'LFE', 'FHL', 'FHR', 'FWL', 'FWR', 'XL', 'XC', 'XR' ]
+
+    # Set up arrays of strings describing the channels, e.g.
+    # [ 'L', 'R', 'SW' ] is common for the output_channels_driven variable,
+    # where L == left, C == center, SW == subwoofer, SL == left surround,
+    # SBR == right surround back, etc.
+
+    input_channel_names  = [ 'L', 'C', 'R', 'SL', 'SR', 'SBL', 'S', 'SBR', 'LFE', 'FHL', 'FHR', 'FWL', 'FWR', 'XL', 'XC', 'XR' ]
     input_channels_supplied = decode_status_string(input_channels_code, input_channel_names)
 
     output_channel_names = [ 'L', 'C', 'R', 'SL', 'SR', 'SBL', 'SB', 'SBR', 'SW', 'FHL', 'FHR', 'FWL', 'FWR' ]

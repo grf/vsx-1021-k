@@ -15,7 +15,8 @@ def usage
 end
 
 def xbmc? vsx
-  return (vsx.input_name == 'DVD') && (vsx.volume.db >= TARGET_VOLUME) && (not vsx.volume.muted?) && (vsx.listening_mode == '0009')
+  return (vsx.input_name == 'DVD') && (vsx.volume.db >= TARGET_VOLUME) \
+      && (not vsx.volume.muted?) && (vsx.listening_mode == STEREO)
 end
 
 hostname = ARGV[0] || 'vsx.sacred.net'
