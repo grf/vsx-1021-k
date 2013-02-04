@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
-$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
+$LOAD_PATH.unshift  "#{ENV['HOME']}/PersonalProjects/vsx-1021-k/lib"
 
 require 'vsx'
 
@@ -14,14 +13,16 @@ hostname = ARGV[0] || 'vsx.sacred.net'
 
 # usage if hostname.nil?
 # usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
-  
+
 begin
   vsx = Vsx.new(hostname)
 
-  if vsx.status == :off
+  if vsx.off?
     vsx.on
+    puts 'on'
   else
     vsx.off
+    puts 'off'
   end
 
 

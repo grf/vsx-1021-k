@@ -1,12 +1,11 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
-$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
+$LOAD_PATH.unshift  "#{ENV['HOME']}/PersonalProjects/vsx-1021-k/lib"
 
 require 'vsx'
 
 hostname = ARGV[0] || 'vsx.sacred.net'
-  
+
 begin
   Vsx.new(hostname).report
 rescue => e

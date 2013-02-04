@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
-$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
+$LOAD_PATH.unshift  "#{ENV['HOME']}/PersonalProjects/vsx-1021-k/lib"
 
 require 'socket'
 require 'vsx-utils'
@@ -67,7 +66,7 @@ def repl_read
     cmd = STDIN.gets                        # let stdio handle this
     return :eof if cmd.nil?
     cmd.strip!
-    cmd = REPORT if cmd == 'report'         # rude beginnings of a command shell 
+    cmd = REPORT if cmd == 'report'         # rude beginnings of a command shell
     @cmd_buffer.push cmd
   end
 
@@ -124,7 +123,7 @@ rescue Errno::ECONNREFUSED => e   # among other things, the VSX only handles one
   end
   STDERR.puts "Connection refused by #{HOSTNAME}, will rety in 5 seconds."
   sleep 5
-  retry  
+  retry
 
 rescue => e
   STDERR.puts "Fatal error '#{e.message}' (#{e.class}), giving up."
