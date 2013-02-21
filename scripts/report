@@ -10,5 +10,6 @@ begin
   Vsx.new(hostname).report
 rescue => e
   STDERR.puts "#{e.class}: #{e.message}"
+  puts e.backtrace
   exit -1
 end

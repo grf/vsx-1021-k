@@ -36,7 +36,8 @@ class Vsx
 
   CONNECTION_TIMEOUT = 2.0     # seconds
   DEFAULT_READ_TIMEOUT = 0.35  # seconds
-  PORT = 23
+  PORT_A = 8102
+  PORT_B = 23
   DEFAULT_RETRYS = 5
 
   # [1] means not present on VSX 1021-k
@@ -361,36 +362,42 @@ class Vsx
 
   def initialize hostname
     @hostname = hostname
+    @port ||= PORT_A
 
     # For some reason the timeout wrapper doesn't return a socket name error, so let's check (caught in rescue).
 
     Socket.gethostbyname(@hostname) unless @hostname =~ %r{^\d{3}\.\d{3}\.\d{3}\.\d{3}$}
 
     timeout(CONNECTION_TIMEOUT) do
-      @socket = TCPSocket::new(@hostname, PORT)
+      @socket = TCPSocket::new(@hostname, @port)
     end
 
     @buff = ''
     @responses = []
 
-    raise NoResponse, "VSX at #{@hostname}:#{PORT} did not respond to status check" unless cmd('', /R/).shift
+    raise NoResponse, "VSX at #{@hostname}:#{@port} did not respond to status check" unless cmd('', /R/).shift
 
     @tuner  = TunerControl.new(self)
     @volume = VolumeControl.new(self)
     @dvd    = DVDControl.new(self)
 
   rescue Timeout::Error => e
-    raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{PORT}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."
+    raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{@port}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."
 
   rescue SocketError => e
-    raise NoConnection, "Couldn't locate VSX receiver at #{@hostname}:#{PORT}: #{e.message}."
+    raise NoConnection, "Couldn't locate VSX receiver at #{@hostname}:#{@port}: #{e.message}."
 
   rescue Errno::ECONNREFUSED => e   # The VSX only handles one connection at a time.
-    raise NoConnection, "VSX receiver at #{@hostname}:#{PORT} not listening: #{e.message}."
+    if @port == PORT_A
+       @port  = PORT_B
+       retry
+    else
+       raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{@port}: #{e.message}."
+    end
   end
 
   def to_s
-    "#<VSX:#{self.object_id} #{@hostname}:#{PORT}>"
+    "#<VSX:#{self.object_id} #{@hostname}:#{@port}>"
   end
 
 

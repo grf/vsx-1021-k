@@ -84,7 +84,8 @@ error_count = 0
 HOSTNAME = "vsx.sacred.net"
 
 begin
-  @vsx = TCPSocket::new(HOSTNAME, 23)
+  # @vsx = TCPSocket::new(HOSTNAME, 23)
+  @vsx = TCPSocket::new(HOSTNAME, 8102)
 
   send_vsx_request('')   # recommended in tech notes - 100 ms before they guarentee attention is acquired. Use bare CRLF.
   sleep 0.1
