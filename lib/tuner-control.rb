@@ -78,10 +78,12 @@ class TunerControl
            end
   end
 
-  # Tell the VSX to use the tuner as input; returns true if succesful
-
   def select
-    return (@vsx.input = '02') == '02'
+    return (@vsx.inputs.selected = 'TUNER')
+  end
+
+  def selected?
+    return (@vsx.inputs.selected[:device] == 'TUNER')
   end
 
   # private

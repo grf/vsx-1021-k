@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 
+
+# next interesting (?) codes:
+# VTA - Video parameter - prohibition information ?!
+
+
+
 $LOAD_PATH.unshift  "#{ENV['HOME']}/PersonalProjects/vsx-1021-k/lib"
 
 require 'socket'
@@ -10,7 +16,11 @@ require 'vsx-utils'
 
 # hodge podge of commands we'll send all at once:
 
-REPORT = [ '?P', '?M', '?F', '?AST', '?V', '?FR', '?VST', '?FL', '?L', '?S', '?SPK' ].join("\r\n")
+# REPORT = [ '?P', '?M', '?F', '?AST', '?V', '?FR', '?VST', '?FL', '?L', '?S', '?SPK' ].join("\r\n")
+REPORT = [ '?P', '?M', '?F', '?AST', '?V', '?FR', '?VST', '?FL', '?L', '?S', '?SPK', '?RGB01', '?RGB02', '?RGB03', '?RGB04', '?RGB05', '?RGB10', '?RGB14', '?RGB15', '?RGB17', '?RGB19', '?RGB25', '?RGB26', '?RGB27', '?RGB33'].join("\r\n")
+
+
+
 
 def repl_prompt
   STDOUT.write 'cmd> '
@@ -84,8 +94,8 @@ error_count = 0
 HOSTNAME = "vsx.sacred.net"
 
 begin
-  # @vsx = TCPSocket::new(HOSTNAME, 23)
-  @vsx = TCPSocket::new(HOSTNAME, 8102)
+  @vsx = TCPSocket::new(HOSTNAME, 23)
+  # @vsx = TCPSocket::new(HOSTNAME, 8102)
 
   send_vsx_request('')   # recommended in tech notes - 100 ms before they guarentee attention is acquired. Use bare CRLF.
   sleep 0.1
@@ -130,8 +140,3 @@ rescue => e
   STDERR.puts "Fatal error '#{e.message}' (#{e.class}), giving up."
   exit -1
 end
-
-
-# next interesting (?) codes:
-# VTA - Video parameter - prohibition information ?!
-

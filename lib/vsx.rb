@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 
-### TODO: handle constants sensibly.  VSX::DEVICES.tuner, etc?
+### TODO: timeout gracefully.  Unsupported commands can hang connection.
 
 ### TODO: add command logging
 
@@ -12,9 +12,6 @@
 ### sense, since we don't want to accidently turn the volume all the
 ### way up and have an exception leave the speakers to disintergrate...
 
-### TODO: The vsx handles only one connection at time with this code, but
-### the android remote control is able to connect even when this code is
-### connected... how?
 
 
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
@@ -28,47 +25,26 @@ require 'vsx-utils'
 require 'volume-control'
 require 'tuner-control'
 require 'dvd-control'
+require 'input-control'
+
 
 class Vsx
   include Timeout
 
   DEBUG = false
 
-  CONNECTION_TIMEOUT = 2.0     # seconds
+  CONNECTION_TIMEOUT = 5.0     # seconds
   DEFAULT_READ_TIMEOUT = 0.35  # seconds
   PORT_A = 8102
   PORT_B = 23
   DEFAULT_RETRYS = 5
 
-  # [1] means not present on VSX 1021-k
 
-  DECODE_INPUTS = {
-    '00' => 'PHONO',           # [1]
-    '01' => 'CD',
-    '02' => 'TUNER',
-    '03' => 'CD-R/TAPE',
-    '04' => 'DVD',
-    '05' => 'TV/SAT',
-    '10' => 'Video 1',
-    '12' => 'MULTI CH IN',     # [1]
-    '14' => 'Video 2',
-    '15' => 'DVR/BDR',
-    '17' => 'iPod/USB',
-    '19' => 'HDMI 1',
-    '20' => 'HDMI 2',          # [1]
-    '21' => 'HDMI 3',          # [1]
-    '22' => 'HDMI 4',          # [1]
-    '23' => 'HDMI 5',          # [1]
-    '24' => 'HDMI 6',          # [1]
-    '25' => 'BD',
-    '26' => 'Home Media Gallery (Internet Radio)',
-    '27' => 'SIRIUS',
-    '31' => 'HDMI (cyclic)',
-    '33' => 'Adapter Port'
-  }
+  ### TODO: listening modes should get moved to an appropriate class....
+
 
   # The listening mode codes can be used to set listening mode; we can
-  # also get listening mode responses tuned more for display (see
+  # instead  get listening mode responses more suitable for display (see
   # DECODE_LISTENING_DISPLAY)
 
   DECODE_LISTENING_MODE = {
@@ -188,7 +164,7 @@ class Vsx
     '0152' => 'OPTIMUM SURROUND',                                     # [1]
   }
 
-  # listening display codes are not usable for setting
+  # listening display codes are not usable as paramters to the vsx device
 
   DECODE_LISTENING_DISPLAY = {
     '0101' => '[)(]PLIIx MOVIE',
@@ -358,7 +334,7 @@ class Vsx
     '0f01' => 'MULTI CH IN'
   }
 
-  attr_reader :tuner, :volume, :hostname, :dvd
+  attr_reader :tuner, :volume, :hostname, :dvd, :inputs
 
   def initialize hostname
     @hostname = hostname
@@ -377,9 +353,19 @@ class Vsx
 
     raise NoResponse, "VSX at #{@hostname}:#{@port} did not respond to status check" unless cmd('', /R/).shift
 
-    @tuner  = TunerControl.new(self)
-    @volume = VolumeControl.new(self)
-    @dvd    = DVDControl.new(self)
+    @tuner   = TunerControl.new(self)
+    @volume  = VolumeControl.new(self)
+    @dvd     = DVDControl.new(self)
+
+
+    #####
+    start = Time.now
+
+    @inputs  = InputControl.new(self)
+
+    #####
+    STDERR.puts sprintf("Took %5.2f seconds to list all inputs", Time.now - start)
+
 
   rescue Timeout::Error => e
     raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{@port}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."
@@ -412,7 +398,8 @@ class Vsx
       puts "VSX receiver is unreachable"
 
     when :on
-      puts 'Input: '  + input_name
+      puts 'Input Devices: ' + inputs.devices.map { |rec| rec[:name] }.join(',  ')
+      puts 'Selected Input: '  + inputs.report
       puts 'Volume: ' + volume.report
       puts 'Tuner: '  + tuner.report
       puts 'Listening Mode: ' + listening_mode_display + ',  more exactly ' + listening_mode_name
@@ -466,27 +453,6 @@ class Vsx
   def off
     return true if off?
     return cmd('PF', /PWR[01]/).shift == 'PWR1'
-  end
-
-  # TODO: need a friendlier version of this...
-
-  # input = CODE changes the input device used by the vsx
-  # receiver. CODEs indicate devices such as tuner ('02'), dvd ('04),
-  # etc.  This is used primarily by controllers (TunerControl,
-  # DVDControl, etc) in their Control#select method.  See the
-  # DECODE_INPUTS hash for the complete list.
-
-  def input= value
-    return value if input == value
-    return cmd("#{value}FN", /FN(#{value})/).shift
-  end
-
-  def input
-    return cmd('?F', /FN(\d+)/).shift
-  end
-
-  def input_name
-    return DECODE_INPUTS[input]
   end
 
   # display()
@@ -724,7 +690,9 @@ class Vsx
   # command/response.
 
   def drain
-    while resp = self.read(0.05)
+    # while resp = self.read(0.05)
+
+    while resp = self.read(0.005)    # not sure how low I can go here,  this really speeds things up.
     end
   end
 

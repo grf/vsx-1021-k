@@ -13,7 +13,8 @@ def usage
 end
 
 def xbmc? vsx
-  return (vsx.input_name == 'DVD') && (vsx.volume.db >= TARGET_VOLUME) \
+
+  return (vsx.dvd.selected?) && (vsx.volume.db >= TARGET_VOLUME) \
       && (not vsx.volume.muted?) && (vsx.listening_mode == STEREO)
 end
 

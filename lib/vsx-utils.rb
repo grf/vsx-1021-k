@@ -1,3 +1,6 @@
+# TODO:  add channel level next for left/right settings
+
+
 # maintain a table of regular expressions that we'll try to match up
 # against VSX responses
 
@@ -34,6 +37,52 @@ def translate_response vsx_response
     end
   end
   return vsx_response
+end
+
+
+# /^RGB..[01].*$/ -- report input name information
+
+on /^RGB[0-9]{2}[01].*$/,  'Input Name' do |response|
+
+  renamed = case response[5..5]
+            when '0' then false
+            when '1' then true
+            else
+              nil
+            end
+
+  device = case response[3..4]
+           when '00' then 'PHONO'
+           when '01' then 'CD'
+           when '02' then 'TUNER'
+           when '03' then 'CD-R/TAPE'
+           when '04' then 'DVD'
+           when '05' then 'TV/SAT'
+           when '10' then 'VIDEO 1(VIDEO)'
+           when '12' then 'MULTI CH IN'
+           when '14' then 'VIDEO 2'
+           when '15' then 'DVR/BDR'
+           when '17' then 'iPod/USB'
+           when '18' then 'XM RADIO'
+           when '19' then 'HDMI 1'
+           when '20' then 'HDMI 2'
+           when '21' then 'HDMI 3'
+           when '22' then 'HDMI 4'
+           when '23' then 'HDMI 5'
+           when '24' then 'HDMI 6'
+           when '25' then 'BD'
+           when '26' then 'HOME MEDIA GALLERY(Internet Radio)'
+           when '27' then 'SIRIUS'
+           when '33' then 'ADAPTER PORT'
+           else
+             'Device Code ' + response[3..4]
+           end
+
+  name = response[6..-1].strip
+
+  #  info = { :device => device,  :name => name,  :renamed => renamed }
+  name  +  (renamed ? " (#{device})" : "")
+
 end
 
 
