@@ -498,10 +498,10 @@ class Vsx
     return nil unless encoded_asterisks && encoded_text
 
     str = case encoded_asterisks
-          when '00': '  '
-          when '01': ' *'
-          when '02': '* '
-          when '03': '**'
+          when '00' then '  '
+          when '01' then ' *'
+          when '02' then '* '
+          when '03' then '**'
           else; ''
           end
 
@@ -510,10 +510,10 @@ class Vsx
 
   def speakers
     return case cmd('?SPK', /^SPK([0-3])$/).shift
-           when '0': 'Off'
-           when '1': 'A'
-           when '2': 'B'
-           when '3': 'A+B'
+           when '0' then 'Off'
+           when '1' then 'A'
+           when '2' then 'B'
+           when '3' then 'A+B'
            end
   end
 
@@ -550,46 +550,46 @@ class Vsx
        = cmd('?AST', /^AST(..)(..)(.{16}).....(.{13}).....$/)
 
     input_signal = case input_signal_code
-                   when '00': 'analog'
-                   when '01': 'analog'
-                   when '02': 'analog'
-                   when '03': 'PCM'
-                   when '04': 'PCM'
-                   when '05': 'DOLBY DIGITAL'
-                   when '06': 'DTS'
-                   when '07': 'DTS-ES Matrix'
-                   when '08': 'DTS-ES Discrete'
-                   when '09': 'DTS 96/24'
-                   when '10': 'DTS 96/24 ES Matrix'
-                   when '11': 'DTS 96/24 ES Discrete'
-                   when '12': 'MPEG-2 AAC'
-                   when '13': 'WMA9 Pro'
-                   when '14': 'DSD->PCM'
-                   when '15': 'HDMI pass-through'
-                   when '16': 'DOLBY DIGITAL PLUS'
-                   when '17': 'DOLBY TrueHD'
-                   when '18': 'DTS EXPRESS'
-                   when '19': 'DTS-HD Master Audio'
-                   when '20': 'DTS-HD High Resolution'
-                   when '21': 'DTS-HD High Resolution'
-                   when '22': 'DTS-HD High Resolution'
-                   when '23': 'DTS-HD High Resolution'
-                   when '24': 'DTS-HD High Resolution'
-                   when '25': 'DTS-HD High Resolution'
-                   when '26': 'DTS-HD High Resolution'
-                   when '27': 'DTS-HD Master Audio'
+                   when '00' then 'analog'
+                   when '01' then 'analog'
+                   when '02' then 'analog'
+                   when '03' then 'PCM'
+                   when '04' then 'PCM'
+                   when '05' then 'DOLBY DIGITAL'
+                   when '06' then 'DTS'
+                   when '07' then 'DTS-ES Matrix'
+                   when '08' then 'DTS-ES Discrete'
+                   when '09' then 'DTS 96/24'
+                   when '10' then 'DTS 96/24 ES Matrix'
+                   when '11' then 'DTS 96/24 ES Discrete'
+                   when '12' then 'MPEG-2 AAC'
+                   when '13' then 'WMA9 Pro'
+                   when '14' then 'DSD->PCM'
+                   when '15' then 'HDMI pass-through'
+                   when '16' then 'DOLBY DIGITAL PLUS'
+                   when '17' then 'DOLBY TrueHD'
+                   when '18' then 'DTS EXPRESS'
+                   when '19' then 'DTS-HD Master Audio'
+                   when '20' then 'DTS-HD High Resolution'
+                   when '21' then 'DTS-HD High Resolution'
+                   when '22' then 'DTS-HD High Resolution'
+                   when '23' then 'DTS-HD High Resolution'
+                   when '24' then 'DTS-HD High Resolution'
+                   when '25' then 'DTS-HD High Resolution'
+                   when '26' then 'DTS-HD High Resolution'
+                   when '27' then 'DTS-HD Master Audio'
                    else
                      "signal code #{input_signal_code}"
                    end
 
     input_frequency = case input_frequency_code
-                      when '00': '32 kHz'
-                      when '01': '44.1 kHz'
-                      when '02': '48 kHz'
-                      when '03': '88.2 kHz'
-                      when '04': '96 kHz'
-                      when '05': '176.4 kHz'
-                      when '06': '192 kHz'
+                      when '00' then '32 kHz'
+                      when '01' then '44.1 kHz'
+                      when '02' then '48 kHz'
+                      when '03' then '88.2 kHz'
+                      when '04' then '96 kHz'
+                      when '05' then '176.4 kHz'
+                      when '06' then '192 kHz'
                       else
                         "frequency code #{input_frequency_code}"
                       end

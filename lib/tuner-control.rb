@@ -40,8 +40,8 @@ class TunerControl
     return value if value == rec[:band]
 
     case value
-    when :fm : code = '00TN'
-    when :am : code = '01TN'
+    when :fm then code = '00TN'
+    when :am then code = '01TN'
     else
       return
     end
@@ -49,8 +49,8 @@ class TunerControl
     @vsx.cmd(code)  # doesn't really return anything interesting
 
     return case @vsx.cmd('?FR',  /^FR([FA])(\d+)$/).shift
-           when 'F' : :fm
-           when 'A' : :am
+           when 'F' then :fm
+           when 'A' then :am
            else
              nil
            end
@@ -61,8 +61,8 @@ class TunerControl
     return value if pretty_close?(value, rec[:frequency])
 
     code = case rec[:band]
-           when :am :  sprintf("%04d", value.to_i)
-           when :fm :  sprintf("%04d", (value * 100).to_i)
+           when :am then  sprintf("%04d", value.to_i)
+           when :fm then  sprintf("%04d", (value * 100).to_i)
            end
 
     @vsx.cmd('TAC')
@@ -71,8 +71,8 @@ class TunerControl
     raw_band, raw_freq = @vsx.cmd('?FR',  /^FR([FA])(\d+)$/)
 
     return case raw_band
-           when 'F': raw_freq.to_i / 100.0
-           when 'A': raw_freq.to_i / 1.0
+           when 'F'then raw_freq.to_i / 100.0
+           when 'A'then raw_freq.to_i / 1.0
            else
              nil
            end
