@@ -4,7 +4,8 @@ $LOAD_PATH.unshift  "#{ENV['HOME']}/PersonalProjects/vsx-1021-k/lib"
 
 require 'vsx'
 
-hostname = ARGV[0] || 'vsx.sacred.net'
+amount = ARGV[0] || 2 # 2 dB by default
+hostname = ARGV[1] || 'vsx.sacred.net'
 
 begin
   vsx = Vsx.new(hostname)
@@ -13,7 +14,7 @@ begin
     exit -1
   end
 
-  vsx.volume.incr
+  vsx.volume.incr amount
   puts vsx.volume.report
 
 rescue => e

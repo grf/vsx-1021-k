@@ -44,12 +44,18 @@ class VolumeControl
     return @vsx.cmd('MF', /^MUT([01])$/).shift == '1'
   end
 
-  def incr
-    return decode_volume(@vsx.cmd('VU', /^VOL(\d+)$/).shift)
+  def incr db_increment=nil
+    return decode_volume(@vsx.cmd('VU', /^VOL(\d+)$/).shift) unless db_increment  # 0.5 db by default
+    db_increment = db_increment.to_f.abs
+
+    raise sprintf("Won't raise volume more than 5dB at a time - you asked for %4.2f", db_increment) if db_increment > 5
+
+    self.db += db_increment
   end
 
-  def decr
-    return decode_volume(@vsx.cmd('VD', /^VOL(\d+)$/).shift)
+  def decr db_increment=nil
+    return decode_volume(@vsx.cmd('VD', /^VOL(\d+)$/).shift) unless db_increment
+    return self.db -= db_increment.to_f.abs
   end
 
   def fade_in target_volume, pause = 0.2
