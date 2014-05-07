@@ -10,13 +10,38 @@ class VolumeControl
     return sprintf("%3.1f Db, %s", db || -999, muted? ? 'muted' : 'not muted')
   end
 
+  def bass
+    return decode_tone(@vsx.cmd('?BA', /^BA(\d+)$/).shift)
+  end
+
+  def treble
+    return decode_tone(@vsx.cmd('?TA', /^BA(\d+)$/).shift)
+  end
+
+
+
+
+
+  # TODO:
+
+  def left
+
+  end
+
+  def right
+  end
+
+
+
+
+
+
   def db
     return decode_volume(@vsx.cmd('?V', /^VOL(\d+)$/).shift)
   end
 
-  # TODO: check that value is a number; also, we need to be careful
-  # about top sound, refuse to turn it up too high for our particualr
-  # system
+  # We're careful about top sound, refuse to turn it up too high for our particular
+  # system. -80 to +12 db.
 
   def db= value
     code = if value >  12.0
@@ -91,7 +116,7 @@ class VolumeControl
 
   def pretty_close? x, y
     return false unless [Float, Fixnum].include?(x.class) &&  [Float, Fixnum].include?(y.class)
-    (x - y).abs <= 0.5  # we can set in 0.5 dB steps
+    return (x - y).abs <= 0.5  # we can set in 0.5 dB steps
   end
 
   def decode_volume code
@@ -99,5 +124,15 @@ class VolumeControl
     return nil unless code =~ /^\d+$/
     return (code.to_i - 161) * 0.5
   end
+
+  def decode_tone code
+    return nil unless code.class == String
+    return nil unless code =~ /^\d+$/
+    return (code.to_i - 06) * 6
+  end
+
+
+
+
 
 end

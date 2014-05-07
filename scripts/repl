@@ -41,7 +41,7 @@ def send_vsx_request str
 end
 
 def parse_buffer
-  if @raw_buffer =~ /^(.*\r\n)(.*)$/m   # check for all completed input (ends with CRLF, aka \r\n)
+  if @raw_buffer =~ /^(.*\r\n)(.*)$/m   # check for all completed input (ends with CRLF)
     @raw_buffer = $2                    # save partial response for later
     return $1.split(/\r\n/)             # get all the completed responses broken out
   else

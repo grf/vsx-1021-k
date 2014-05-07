@@ -1,7 +1,10 @@
 #!/usr/bin/env ruby
 
 
-### TODO: timeout gracefully.  Unsupported commands can hang connection.
+### TODO: implement CHANNEL LEVEL CL* commands (command sheet 1 line 418)
+### TODO: implement TONE CONTROL B*/T* commands (command sheet 1 line 346)
+
+### TODO: timeout gracefully.  Unsupported commands can hang connection (why no timeout?)
 
 ### TODO: add command logging
 
@@ -10,7 +13,7 @@
 ### should simply pass these values up the chain - it's up to the
 ### application to determine what to do on missing data (this makes
 ### sense, since we don't want to accidently turn the volume all the
-### way up and have an exception leave the speakers to disintergrate...
+### way up and have an exception leave the speakers disintergrating...
 
 
 
@@ -340,7 +343,7 @@ class Vsx
     @hostname = hostname
     @port ||= PORT_A
 
-    # For some reason the timeout wrapper doesn't return a socket name error, so let's check (caught in rescue).
+    # For some reason the timeout wrapper doesn't return a socket name error, so let's provoke an exception explicitly
 
     Socket.gethostbyname(@hostname) unless @hostname =~ %r{^\d{3}\.\d{3}\.\d{3}\.\d{3}$}
 
@@ -356,15 +359,7 @@ class Vsx
     @tuner   = TunerControl.new(self)
     @volume  = VolumeControl.new(self)
     @dvd     = DVDControl.new(self)
-
-
-    #####
-    start = Time.now
-
     @inputs  = InputControl.new(self)
-
-    #####
-    STDERR.puts sprintf("Took %5.2f seconds to list all inputs", Time.now - start)
 
 
   rescue Timeout::Error => e
@@ -421,8 +416,6 @@ class Vsx
   def unreachable?
     status_helper == :unreachable
   end
-
-  # TODO: need to rethink what on/off returns; also need on? and off?
 
   # Several commands will hang if called inappropriately, e.g. turning
   # the vsx receiver on when it's already on.  We don't want to waste

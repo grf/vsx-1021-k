@@ -4,28 +4,32 @@ class InputControl
 
 
   INPUT_CODES = {
-#   '00' => 'PHONO',           # [1]
+    '00' => 'PHONO',           # [1]
     '01' => 'CD',
     '02' => 'TUNER',
     '03' => 'CD-R/TAPE',
     '04' => 'DVD',
     '05' => 'TV/SAT',
     '10' => 'Video 1',
-#   '12' => 'MULTI CH IN',     # [1]
+    '12' => 'MULTI CH IN',     # [1]
     '14' => 'Video 2',
     '15' => 'DVR/BDR',
     '17' => 'iPod/USB',
     '19' => 'HDMI 1',
-#   '20' => 'HDMI 2',          # [1]   but the vsx-1021 does respond using HDMI 2-5. Probably mapped to others.
-#   '21' => 'HDMI 3',          # [1]
-#   '22' => 'HDMI 4',          # [1]
-#   '23' => 'HDMI 5',          # [1]
-#   '24' => 'HDMI 6',          # [1]
+    '20' => 'HDMI 2',          # [2]   but the vsx-1021 does respond using HDMI 2-5. Probably mapped to others.
+    '21' => 'HDMI 3',          # [2]
+    '22' => 'HDMI 4',          # [2]
+    '23' => 'HDMI 5',          # [2]
+    '24' => 'HDMI 6',          # [1]
     '25' => 'BD',
     '26' => 'Home Media Gallery (Internet Radio)',
     '27' => 'SIRIUS',
     '33' => 'Adapter Port'
   }
+
+  # [1] - my vsx-1021 doesn't support these devices; get bad command
+  # [2} - these return in spite of the docs saying no;  mapped to other device?
+
 
   attr_reader :devices
 
@@ -34,7 +38,7 @@ class InputControl
     @devices = find_devices()
   end
 
-  # TODO:  we'd like to blast all the queries at once to the VSX,  but our primitive read doesn't work with multiple responses - but see scripts/repl.
+  # TODO:  we'd like to blast a set of queries all at once to the VSX,  but our primitive read doesn't work with multiple responses - but see scripts/repl.
 
   def find_devices
     devs = []
@@ -46,7 +50,6 @@ class InputControl
     return devs
   end
 
-
   def report
     info = selected
     case
@@ -56,7 +59,6 @@ class InputControl
       info[:device]
     end
   end
-
 
   def selected
     code = @vsx.cmd('?F', /FN(\d+)/).shift

@@ -1,5 +1,9 @@
 require 'vsx-exceptions'
 
+
+# TODO: manage presets somehow
+
+
 class TunerControl
 
   def initialize vsx
