@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-
 ### TODO: implement CHANNEL LEVEL CL* commands (command sheet 1 line 418)
 ### TODO: implement TONE CONTROL B*/T* commands (command sheet 1 line 346)
 
@@ -15,8 +14,6 @@
 ### sense, since we don't want to accidently turn the volume all the
 ### way up and have an exception leave the speakers disintergrating...
 
-
-
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
 
@@ -30,7 +27,6 @@ require 'tuner-control'
 require 'dvd-control'
 require 'input-control'
 
-
 class Vsx
   include Timeout
 
@@ -42,9 +38,7 @@ class Vsx
   PORT_B = 23
   DEFAULT_RETRYS = 5
 
-
   ### TODO: listening modes should get moved to an appropriate class....
-
 
   # The listening mode codes can be used to set listening mode; we can
   # instead  get listening mode responses more suitable for display (see
@@ -361,7 +355,6 @@ class Vsx
     @dvd     = DVDControl.new(self)
     @inputs  = InputControl.new(self)
 
-
   rescue Timeout::Error => e
     raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{@port}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."
 
@@ -378,14 +371,11 @@ class Vsx
   end
 
   def to_s
-    "#<VSX:#{self.object_id} #{@hostname}:#{@port}>"
+    "#<VSX:#{self.object_id.to_s(16)} #{@hostname}:#{@port}>"
   end
 
-
   def report
-
     case status_helper
-
     when :off
       puts "Powered off"
 
@@ -424,7 +414,6 @@ class Vsx
   # ms, while read timeouts take three times that (check the current
   # value with DEFAULT_READ_TIMEOUT).
 
-
   # on() - returns true if we successfully power up or already are
   # powered up, nil otherwise.
   #
@@ -438,7 +427,6 @@ class Vsx
     cmd('PO')
     return cmd('?P', /PWR[01]/, 10).shift == 'PWR0'
   end
-
 
   # off() - turn off the vsx, return true on success power-down or if we
   # are already powered-down.
@@ -553,7 +541,6 @@ class Vsx
                         "frequency code #{input_frequency_code}"
                       end
 
-
     # Set up arrays of strings describing the channels, e.g.
     # [ 'L', 'R', 'SW' ] is common for the output_channels_driven variable,
     # where L == left, C == center, SW == subwoofer, SL == left surround,
@@ -565,7 +552,6 @@ class Vsx
     output_channel_names = [ 'L', 'C', 'R', 'SL', 'SR', 'SBL', 'SB', 'SBR', 'SW', 'FHL', 'FHR', 'FWL', 'FWR' ]
     output_channels_driven = decode_status_string(output_channels_code, output_channel_names)
 
-
     return {
       :input_channels  => input_channels_supplied,
       :input_frequency => input_frequency,
@@ -574,7 +560,6 @@ class Vsx
     }
 
   end
-
 
   def audio_status_report
 
@@ -593,7 +578,6 @@ class Vsx
     report
   end
 
-
   # cmd(REQUEST, [ EXPECTED ], [ TRYS ]) sends a command to the VSX
   # receiver.
   #
@@ -604,7 +588,7 @@ class Vsx
   # this because there may be many irrelevant responses to our
   # REQUEST; in fact, we may get arbitrary responses caused by
   # external changes to the receiver, as when someone is adjusting the
-  # volume control.
+  # volume control dial.
   #
   # Our reads will wait up to DEFAULT_READ_TIMEOUT (350 milliseconds
   # at the time of this writing). A timeout rarely occurs, however.
@@ -627,7 +611,7 @@ class Vsx
 
     while response = self.read
       trys -= 1
-      return [] if trys <= 0
+      return [] if trys <= 0                # could be thowing away a real response, but too bad, too late...
       matches = expected.match(response)
       next if matches.nil?
       return  matches.to_a if matches.length == 1
@@ -640,8 +624,7 @@ class Vsx
     @socket.close unless @socket.closed?
   end
 
-
-  ##### protected
+  protected
 
   # write(STR)
   #
@@ -689,7 +672,6 @@ class Vsx
     end
   end
 
-
   def status_helper
     resp = cmd('?P', /PWR[01]/).shift
     return :on  if resp == 'PWR0'
@@ -710,7 +692,6 @@ class Vsx
     str.unpack('a' * str.length).map { |code| code == '1' }
   end
 
-
   # decode_status_string CODE_STRING, DOC_ARRAY
   #
   # Help for unpacking ASCII status codes in a string, and returning
@@ -730,5 +711,4 @@ class Vsx
     return results
   end
 
-
-end
+end # of class Vsx
