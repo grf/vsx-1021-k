@@ -6,7 +6,7 @@
 
 
 
-$LOAD_PATH.unshift  "#{ENV['HOME']}/PersonalProjects/vsx-1021-k/lib"
+$LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
 
 require 'socket'
 require 'vsx-utils'

@@ -1,9 +1,8 @@
-#!/usr/bin/env ruby
-
 ### TODO: implement CHANNEL LEVEL CL* commands (command sheet 1 line 418)
+
 ### TODO: implement TONE CONTROL B*/T* commands (command sheet 1 line 346)
 
-### TODO: timeout gracefully.  Unsupported commands can hang connection (why no timeout?)
+### TODO: timeout gracefully.  Unsupported commands can hang connection (why isn't existing timeout mechanism not working in that case?)
 
 ### TODO: add command logging
 
