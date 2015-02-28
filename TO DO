@@ -1,2 +1,6 @@
 
 Add sinatra web services to switch inputs, maybe volume.
+
+Add 'rename' script to - with no arguments - list the canonical inputs
+and their panel renames - with two args, rename the canonical name (arg 1)
+with the supplied string (arg 2).
