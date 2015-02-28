@@ -1,5 +1,12 @@
 #!/usr/bin/env ruby
 
+# I've called this script 'satya', since it switches the VSX AVR to
+# the HDMI output connection from my living room Ubuntu server
+# satyagraha.sacred.net - this is connected to the 'DVD' HDMI input of
+# the VSX.  Of course you may not be using that name - this will just
+# switch to the DVD input.
+
+
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
 
 TARGET_VOLUME = -25
@@ -12,7 +19,7 @@ def usage
   exit -1
 end
 
-def xbmc? vsx
+def satya? vsx
 
   return (vsx.dvd.selected?) && (vsx.volume.db >= TARGET_VOLUME) \
       && (not vsx.volume.muted?) && (vsx.listening_mode == STEREO)
@@ -30,8 +37,8 @@ begin
 
   vsx.on
 
-  if xbmc? vsx
-    puts "Already set to XBMC, exiting."
+  if satya? vsx
+    puts "Already set to SATYA, exiting."
     exit
   end
 
