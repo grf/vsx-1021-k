@@ -25,6 +25,7 @@ require 'volume-control'
 require 'tuner-control'
 require 'dvd-control'
 require 'input-control'
+require 'video1-control'
 
 class Vsx
   include Timeout
@@ -330,7 +331,7 @@ class Vsx
     '0f01' => 'MULTI CH IN'
   }
 
-  attr_reader :tuner, :volume, :hostname, :dvd, :inputs
+  attr_reader :tuner, :volume, :hostname, :dvd, :inputs, :video1
 
   def initialize hostname
     @hostname = hostname
@@ -352,7 +353,9 @@ class Vsx
     @tuner   = TunerControl.new(self)
     @volume  = VolumeControl.new(self)
     @dvd     = DVDControl.new(self)
+    @video1  = Video1Control.new(self)
     @inputs  = InputControl.new(self)
+
 
   rescue Timeout::Error => e
     raise NoConnection, "Couldn't connect to VSX receiver at #{@hostname}:#{@port}: #{e.message} after #{CONNECTION_TIMEOUT} seconds."
