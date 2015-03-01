@@ -6,35 +6,22 @@
 # the VSX.  Of course you may not be using that name - this will just
 # switch to the DVD input.
 
-
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
-
-TARGET_VOLUME = -25
-STEREO = '0009'
-
 require 'vsx'
 
-def usage
-  STDERR.puts "usage: #{$0} host"
-  exit -1
-end
+TARGET_VOLUME = -25
 
 def satya? vsx
-
-  return (vsx.dvd.selected?) && (vsx.volume.db >= TARGET_VOLUME) \
-      && (not vsx.volume.muted?) && (vsx.listening_mode == STEREO)
+  return (vsx.dvd.selected?) &&
+         (vsx.volume.db >= TARGET_VOLUME) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
 end
 
-hostname = ARGV[0] || 'vsx.sacred.net'
-
-# usage if hostname.nil?
-# usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
-
 begin
-  vsx = Vsx.new(hostname)
+  vsx = Vsx.new(ARGV[0] || 'vsx.sacred.net')
 
   was_off = vsx.off?
-
   vsx.on
 
   if satya? vsx
@@ -45,7 +32,7 @@ begin
   vsx.volume.db = -50
   vsx.volume.unmute
   vsx.dvd.select
-  vsx.listening_mode = STEREO
+  vsx.listening_mode = Vsx::STEREO_DIRECT_SET
 
   sleep 5 if was_off
 

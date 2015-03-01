@@ -1,33 +1,21 @@
 #!/usr/bin/env ruby
-
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
-
 require 'vsx'
 
-def usage
-  STDERR.puts "usage: #{$0} host"
-  exit -1
-end
-
-hostname = ARGV[0] || 'vsx.sacred.net'
-
-# usage if hostname.nil?
-# usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
-
 TARGET_VOLUME = -30
-STEREO = '0009'
 
 def wuft? vsx
-  return (vsx.tuner.selected?) && (vsx.volume.db >= TARGET_VOLUME) && (vsx.listening_mode == STEREO) \
-      && (vsx.tuner.frequency == 89.1) && (vsx.tuner.band == :fm) && (not vsx.volume.muted?)
+  return (vsx.tuner.selected?) &&
+         (vsx.volume.db >= TARGET_VOLUME) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET) &&
+         (vsx.tuner.frequency == 89.1) &&
+         (vsx.tuner.band == :fm) &&
+         (not vsx.volume.muted?)
 end
 
-
 begin
-  vsx = Vsx.new(hostname)
-
+  vsx = Vsx.new(ARGV[0] || 'vsx.sacred.net')
   was_off = vsx.off?
-
   vsx.on
 
   if wuft? vsx
@@ -35,11 +23,10 @@ begin
     exit
   end
 
-
   vsx.volume.db = -50
   vsx.volume.unmute
 
-  vsx.listening_mode = STEREO
+  vsx.listening_mode = Vsx::STEREO_DIRECT_SET
   vsx.tuner.select
   vsx.tuner.frequency = 89.1
   vsx.tuner.band = :fm

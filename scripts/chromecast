@@ -1,40 +1,25 @@
 #!/usr/bin/env ruby
 
-# I've called this script 'satya', since it switches the VSX AVR to
-# the HDMI output connection from my living room Ubuntu server
-# satyagraha.sacred.net - this is connected to the 'DVD' HDMI input of
-# the VSX.  Of course you may not be using that name - this will just
-# switch to the DVD input.
-
+# I've called this script 'chromecast', since it switches the VSX AVR
+# to the chromecast installed in the VIDEO 1 input of the VSX.  Of
+# course you may not be using that name - this will just switch to the
+# VIDEO 1 input.
 
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
-
-TARGET_VOLUME = -25
-STEREO = '0009'
-
 require 'vsx'
 
-def usage
-  STDERR.puts "usage: #{$0} host"
-  exit -1
-end
+target_volume = -25
 
 def video1? vsx
-
-  return (vsx.video1.selected?) && (vsx.volume.db >= TARGET_VOLUME) \
-      && (not vsx.volume.muted?) && (vsx.listening_mode == STEREO)
+  return (vsx.video1.selected?) &&
+         (vsx.volume.db >= target_volume) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == vsx::stereo_direct_set)
 end
 
-hostname = ARGV[0] || 'vsx.sacred.net'
-
-# usage if hostname.nil?
-# usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name
-
 begin
-  vsx = Vsx.new(hostname)
-
+  vsx = Vsx.new(ARGV[0] || 'vsx.sacred.net')
   was_off = vsx.off?
-
   vsx.on
 
   if video1? vsx
@@ -45,7 +30,7 @@ begin
   vsx.volume.db = -50
   vsx.volume.unmute
   vsx.video1.select
-  vsx.listening_mode = STEREO
+  vsx.listening_mode = Vsx::STEREO_DIRECT_SET
 
   sleep 5 if was_off
 

@@ -44,6 +44,7 @@ class Vsx
   # instead  get listening mode responses more suitable for display (see
   # DECODE_LISTENING_DISPLAY)
 
+
   DECODE_LISTENING_MODE = {
     '0001' => 'STEREO (cyclic)',
     '0010' => 'STANDARD',
@@ -161,7 +162,60 @@ class Vsx
     '0152' => 'OPTIMUM SURROUND',                                     # [1]
   }
 
-  # listening display codes are not usable as paramters to the vsx device
+  # constants for the above supported modes (for my model)
+
+  STEREO_CYCLIC                             =  '0001'
+  FRONT_STAGE_SURROUND_ADVANCE_FOCUS        =  '0003'
+  FRONT_STAGE_SURROUND_ADVANCE_WIDE         =  '0004'
+  AUTO_SURR_STREAM_DIRECT_CYCLIC            =  '0005'
+  AUTO_SURROUND                             =  '0006'
+  DIRECT                                    =  '0007'
+  PURE_DIRECT                               =  '0008'
+  STEREO_DIRECT_SET                         =  '0009'
+  STANDARD                                  =  '0010'
+  PRO_LOGIC                                 =  '0012'
+  PRO_LOGIC2_MOVIE                          =  '0013'
+  PRO_LOGIC2_MUSIC                          =  '0014'
+  PRO_LOGIC2_GAME                           =  '0015'
+  NEO6_CINEMA                               =  '0016'
+  NEO6_MUSIC                                =  '0017'
+  PRO_LOGIC2X_MOVIE                         =  '0018'
+  PRO_LOGIC2X_MUSIC                         =  '0019'
+  PRO_LOGIC2X_GAME                          =  '0020'
+  MULTI_CH_SOURCE                           =  '0021'
+  MULTI_CH_SOURCE_DOLBY_EX                  =  '0022'
+  MULTI_CH_SOURCE_PRO_LOGIC2X_MOVIE         =  '0023'
+  MULTI_CH_SOURCE_PRO_LOGIC2X_MUSIC         =  '0024'
+  MULTI_CH_SOURCEDTS_ES_NEO6                =  '0025'
+  MULTI_CH_SOURCEDTS_ES_MATRIX              =  '0026'
+  MULTI_CH_SOURCEDTS_ES_DISCRETE            =  '0027'
+  NEURAL_SURROUND                           =  '0029'
+  MULTI_CH_SOURCEDTS_ES_8CH_DISCRETE        =  '0030'
+  PRO_LOGIC2Z_HEIGHT                        =  '0031'
+  WIDE_SURROUND_MOVIE                       =  '0032'
+  WIDE_SURROUND_MUSIC                       =  '0033'
+  MULTI_CH_SOURCE_PRO_LOGIC2Z_HEIGHT        =  '0034'
+  MULTI_CH_SOURCE_WIDE_SURROUND_MOVIE       =  '0035'
+  MULTI_CH_SOURCE_WIDE_SURROUND_MUSIC       =  '0036'
+  ADVANCED_SURROUND_CYCLIC                  =  '0100'
+  ACTION                                    =  '0101'
+  SCI_FI                                    =  '0102'
+  DRAMA                                     =  '0103'
+  ENTERTAINMENT_SHOW                        =  '0104'
+  MONO_FILM                                 =  '0105'
+  EXPANDED_THEATER                          =  '0106'
+  CLASSICAL                                 =  '0107'
+  UNPLUGGED                                 =  '0109'
+  ROCK_POP                                  =  '0110'
+  EXTENDED_STEREO                           =  '0112'
+  PHONES_SURROUND                           =  '0113'
+  TV_SURROUND                               =  '0116'
+  SPORTS                                    =  '0117'
+  ADVANCED_GAME                             =  '0118'
+  AUTO_LEVEL_CONTROL                        =  '0151'
+  RETRIEVER_AIR                             =  '0153'
+
+  # listening display codes are not usable as paramters to vsx devices
 
   DECODE_LISTENING_DISPLAY = {
     '0101' => '[)(]PLIIx MOVIE',
