@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #
+# TODO: add delete method
+#
+
 # Randy Fischer (rf@ufl.edu) reimplemented this wheel on 2010-06-13.  Pleasant exercise.
 #
 # Build a trie - my goal was to remove the largest common prefix from
@@ -7,9 +10,9 @@
 # the usual trie tricks: stores key/value pairs, orders the keys, etc.
 #
 # Example program:
-# 
+#
 #  trie = Trie.new
-#  
+#
 #  trie['silos.darchive.fcla.edu:/daitssfs/001'] = :a
 #  trie['silos.darchive.fcla.edu:/daitssfs/002'] = :b
 #  trie['silos.darchive.fcla.edu:/daitssfs/002'] = :c
@@ -20,12 +23,12 @@
 #
 #  trie['silos.darchive.fcla.edu:/daitssfs/002']     => :c
 #
-#  
+#
 #  trie.keys   =>  [ "silos.darchive.fcla.edu:/daitssfs/001", "silos.darchive.fcla.edu:/daitssfs/002", .. ]
 #  trie.values =>  [ :a, :c, :d, :e, :f, :g ]
 #
 #  trie.prefix => 'silos.darchive.fcla.edu:/daitssfs/0'
-#  
+#
 #  trie.twigs  => [ '01', '02', '04', '10', '15', '27' ]
 
 class Trie
@@ -46,14 +49,14 @@ class Trie
     def unwrap
       value
     end
-    
+
     def to_s
       "#<box##{self.object_id}: #{value.inspect}>"
     end
   end
 
   # A node stores a single character, pointers to children nodes, and perhaps a boxed value.
-  # 
+  #
   # Example Node: < letter => 'a', value => 'adjective, also the indefinite article, refers...', children => [ <node>, <node> .. ] >
 
   class Node
@@ -114,7 +117,7 @@ class Trie
     find_values collection
     collection.map { |box| box.unwrap }
   end
-    
+
   # There's a broken by design bug in here: if the largest common
   # prefix is itself a key, we'll get an empty string. You'll need to
   # check for that case. TODO: fix that.
@@ -158,7 +161,7 @@ class Trie
     collection.push str + node.letter unless node.value.nil?
     node.children.each do |nd|
       find_keys collection, nd, str + node.letter
-    end      
+    end
   end
 
   # Find all values, same order as corresponding keys are
@@ -168,7 +171,7 @@ class Trie
     collection.push node.value unless node.value.nil?
     node.children.each do |nd|
       find_values collection, nd, str + node.letter
-    end      
+    end
   end
 
   # Lookup value for a key. Used for []
@@ -184,12 +187,12 @@ class Trie
       return nd.value if tail.empty? and not nd.value.nil?
       return lookup tail, nd
     end
-    
+
     return nil
   end
 
   # TODO:....
-  
+
   public
 
   def completions str
@@ -212,11 +215,10 @@ class Trie
     node.children.each do |nd|
       next unless head == nd.letter
       return nd if tail.empty?
-      return find_terminal tail, nd    
+      return find_terminal tail, nd
     end
     return nil
   end
 
 
 end
-

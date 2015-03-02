@@ -3,12 +3,12 @@ module TrieHelpers
 
     trie = Trie.new
 
-    trie['silos.darchive.fcla.edu:/daitssfs/001'] = :a
-    trie['silos.darchive.fcla.edu:/daitssfs/002'] = :b
-    trie['silos.darchive.fcla.edu:/daitssfs/003'] = :c
     trie['silos.darchive.fcla.edu:/daitssfs/004'] = :d
+    trie['silos.darchive.fcla.edu:/daitssfs/003'] = :c
     trie['silos.darchive.fcla.edu:/daitssfs/010'] = :e
     trie['silos.darchive.fcla.edu:/daitssfs/015'] = :f
+    trie['silos.darchive.fcla.edu:/daitssfs/001'] = :a
+    trie['silos.darchive.fcla.edu:/daitssfs/002'] = :b
     trie['silos.darchive.fcla.edu:/daitssfs/027'] = :g
 
     return trie
