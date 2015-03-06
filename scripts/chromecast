@@ -8,7 +8,7 @@
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
 require 'vsx'
 
-target_volume = -25
+TARGET_VOLUME = -25
 
 def video1? vsx
   return (vsx.video1.selected?) &&

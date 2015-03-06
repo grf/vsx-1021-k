@@ -1,0 +1,135 @@
+#!/usr/bin/env ruby
+
+# This is a generalization of serveral scripts I've written to
+
+$LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
+require 'vsx'
+require 'optparse'
+
+
+VOLUMES = { satya: -25, chrome: -25, wuft: -30, roku: -30, mac: -30 }
+
+
+def usage
+  me = $0.sub(/.*\//, '')
+  STDERR.puts "#{me} [ --roku | --mac-display | --satyagraha | --chromecast | wuft ]"
+  exit 1
+end
+
+
+def get_input_device_from_commandline args
+  input_device, number_of_devices = nil, 0
+  opts   = OptionParser.new do |opt|
+    opt.on("--roku",         "set VSX to use roku")        { input_device = :roku;   number_of_devices += 1 }
+    opt.on("--mac-display",  "set VSX to use mac display") { input_device = :mac;    number_of_devices += 1 }
+    opt.on("--satyagraha",   "set VSX to use server")      { input_device = :satya;  number_of_devices += 1 }
+    opt.on("--chromecast",   "set VSX to use chromecast")  { input_device = :chrome; number_of_devices += 1 }
+    opt.on("--wuft",         "set VSX to use WUFT")        { input_device = :wuft;   number_of_devices += 1 }
+    opt.on("--list",         "list available devices")     { input_device = :list;   number_of_devices += 1 }
+  end
+  opts.parse!(args)
+  usage unless number_of_devices == 1
+  if input_device == :list
+    puts "roku satyagraha mac-display chromecast wuft"
+    exit 0
+  end
+
+rescue => e
+  STDERR.puts e, opts
+  exit -1
+else
+  return input_device
+end
+
+
+def wuft? vsx
+  # puts 'wuft?'
+  return (vsx.tuner.selected?) &&
+         (vsx.volume.db >= VOLUMES[:wuft]) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET) &&
+         (vsx.tuner.frequency == 89.1) &&
+         (vsx.tuner.band == :fm) &&
+         (not vsx.volume.muted?)
+end
+
+
+def satya? vsx
+  # puts 'satya?'
+  return (vsx.dvd.selected?) &&
+         (vsx.volume.db >= VOLUMES[:satya]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
+def roku? vsx
+  # puts 'roku?'
+  return (vsx.bd.selected?) &&
+         (vsx.volume.db >= VOLUMES[:roku]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
+def mac? vsx
+  # puts 'mac?'
+  return (vsx.dvrbdr.selected?) &&
+         (vsx.volume.db >= VOLUMES[:mac]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
+def chrome? vsx
+  # puts 'chrome?'
+  return (vsx.dvrbdr.selected?) &&
+         (vsx.volume.db >= VOLUMES[:mac]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
+
+begin
+  input_device = get_input_device_from_commandline(ARGV)
+
+  vsx = Vsx.new('vsx.sacred.net')
+
+  was_off = vsx.off?
+  vsx.on
+
+  vsx.listening_mode = Vsx::STEREO_DIRECT_SET
+  vsx.volume.db = -50
+  vsx.volume.unmute
+
+  case input_device
+  when :roku
+    vsx.bd.select unless roku?(vsx)
+  when :satya
+    vsx.dvd.select unless satya?(vsx)
+  when :mac
+    vsx.dvrbdr.select unless mac?(vsx)
+  when :chrome
+    vsx.video1.select unless chrome?(vsx)
+  when :wuft
+    unless wuft?(vsx)
+      vsx.tuner.select
+      vsx.tuner.frequency = 89.1
+      vsx.tuner.band = :fm
+    end
+  else
+    usage
+  end
+
+  if was_off
+    puts 'sleeping'
+    sleep 5
+  end
+
+  vsx.volume.fade_in VOLUMES[input_device]
+
+rescue => e
+  puts "Oops: #{e.class}"
+  puts e.message
+  puts e.backtrace
+end

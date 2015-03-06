@@ -23,9 +23,14 @@ require 'vsx-exceptions'
 require 'vsx-utils'
 require 'volume-control'
 require 'tuner-control'
-require 'dvd-control'
 require 'input-control'
-require 'video1-control'
+require 'dvd-control'        # have the living room server on this input, host satyagraha.sacred.net
+require 'video1-control'     # have the chromecast on this input
+require 'bd-control'         # have the Roku on this input
+require 'dvr-bdr-control'    # have the Mac Display on this input
+
+# add one for the MAC Display system
+
 
 class Vsx
   include Timeout
@@ -385,7 +390,7 @@ class Vsx
     '0f01' => 'MULTI CH IN'
   }
 
-  attr_reader :tuner, :volume, :hostname, :dvd, :inputs, :video1
+  attr_reader :tuner, :volume, :hostname, :dvd, :inputs, :video1, :bd, :dvrbdr
 
   def initialize hostname
     @hostname = hostname
@@ -407,6 +412,8 @@ class Vsx
     @tuner   = TunerControl.new(self)
     @volume  = VolumeControl.new(self)
     @dvd     = DVDControl.new(self)
+    @bd      = BDControl.new(self)
+    @dvrbdr  = DVRBDRControl.new(self)
     @video1  = Video1Control.new(self)
     @inputs  = InputControl.new(self)
 
