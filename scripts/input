@@ -11,35 +11,36 @@ VOLUMES = { satya: -25, chrome: -25, wuft: -30, roku: -30, mac: -30 }
 
 
 def usage
-  me = $0.sub(/.*\//, '')
-  STDERR.puts "#{me} [ --roku | --mac-display | --satyagraha | --chromecast | wuft ]"
+  STDERR.puts "Usage: #{$0.sub(/.*\//, '')} [ --roku | --mac-display | --satyagraha | --chromecast | --wuft | --list ]"
   exit 1
 end
 
 
 def get_input_device_from_commandline args
-  input_device, number_of_devices = nil, 0
+  input_device, number_of_arguments = nil, 0
 
   opts   = OptionParser.new do |opt|
-    opt.on("--chromecast",   "set VSX to use chromecast")  { input_device = :chrome; number_of_devices += 1 }
-    opt.on("--mac-display",  "set VSX to use mac display") { input_device = :mac;    number_of_devices += 1 }
-    opt.on("--roku",         "set VSX to use roku")        { input_device = :roku;   number_of_devices += 1 }
-    opt.on("--satyagraha",   "set VSX to use server")      { input_device = :satya;  number_of_devices += 1 }
-    opt.on("--wuft",         "set VSX to use WUFT")        { input_device = :wuft;   number_of_devices += 1 }
+    opt.on("--chromecast",   "set VSX to use chromecast")  { input_device = :chrome; number_of_arguments += 1 }
+    opt.on("--mac-display",  "set VSX to use mac display") { input_device = :mac;    number_of_arguments += 1 }
+    opt.on("--roku",         "set VSX to use roku")        { input_device = :roku;   number_of_arguments += 1 }
+    opt.on("--satyagraha",   "set VSX to use server")      { input_device = :satya;  number_of_arguments += 1 }
+    opt.on("--wuft",         "set VSX to use WUFT")        { input_device = :wuft;   number_of_arguments += 1 }
 
-    opt.on("--list",         "list available devices")     { input_device = :list;   number_of_devices += 1 }
+    opt.on("--list",         "list available devices")     { input_device = :list;   number_of_arguments += 1 }
   end
   opts.parse!(args)
 
-  usage unless number_of_devices == 1
+  usage unless number_of_arguments == 1
 
   if input_device == :list
     puts "chromecast mac-display roku satyagraha wuft"
     exit 0
   end
+
 rescue => e
   STDERR.puts e, opts
   exit -1
+
 else
   return input_device
 end
