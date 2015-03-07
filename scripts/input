@@ -1,6 +1,17 @@
 #!/usr/bin/env ruby
 
-# This is a generalization of serveral scripts I've written to
+# This script takes one flag and sets the VSX to set the inputs to one of:
+#
+# --chromecast    - set to VICEO_1
+# --mac-display   - set to DVR_BDR
+# --roku          - set to BD
+# --satyagraha    - set to DVD
+# --wuft          - set to TUNER, FM, station 89.1
+#
+# also:
+#
+# --list          - gives the option (thinking REST server for the future)
+
 
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
 require 'vsx'
@@ -11,7 +22,7 @@ VOLUMES = { satya: -25, chrome: -25, wuft: -30, roku: -30, mac: -30 }
 
 
 def usage
-  STDERR.puts "Usage: #{$0.sub(/.*\//, '')} [ --roku | --mac-display | --satyagraha | --chromecast | --wuft | --list ]"
+  STDERR.puts "Usage: #{$0.sub(/.*\//, '')} [ --chromecast | --mac-display | --roku | --satyagraha | --wuft | --list ]"
   exit 1
 end
 
@@ -86,7 +97,7 @@ end
 
 def chrome? vsx
   # puts 'chrome?'
-  return (vsx.dvrbdr.selected?) &&
+  return (vsx.video1.selected?) &&
          (vsx.volume.db >= VOLUMES[:chrome]) &&
          (not vsx.volume.muted?) &&
          (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
