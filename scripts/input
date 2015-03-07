@@ -19,21 +19,24 @@ end
 
 def get_input_device_from_commandline args
   input_device, number_of_devices = nil, 0
+
   opts   = OptionParser.new do |opt|
-    opt.on("--roku",         "set VSX to use roku")        { input_device = :roku;   number_of_devices += 1 }
-    opt.on("--mac-display",  "set VSX to use mac display") { input_device = :mac;    number_of_devices += 1 }
-    opt.on("--satyagraha",   "set VSX to use server")      { input_device = :satya;  number_of_devices += 1 }
     opt.on("--chromecast",   "set VSX to use chromecast")  { input_device = :chrome; number_of_devices += 1 }
+    opt.on("--mac-display",  "set VSX to use mac display") { input_device = :mac;    number_of_devices += 1 }
+    opt.on("--roku",         "set VSX to use roku")        { input_device = :roku;   number_of_devices += 1 }
+    opt.on("--satyagraha",   "set VSX to use server")      { input_device = :satya;  number_of_devices += 1 }
     opt.on("--wuft",         "set VSX to use WUFT")        { input_device = :wuft;   number_of_devices += 1 }
+
     opt.on("--list",         "list available devices")     { input_device = :list;   number_of_devices += 1 }
   end
   opts.parse!(args)
+
   usage unless number_of_devices == 1
+
   if input_device == :list
-    puts "roku satyagraha mac-display chromecast wuft"
+    puts "chromecast mac-display roku satyagraha wuft"
     exit 0
   end
-
 rescue => e
   STDERR.puts e, opts
   exit -1
@@ -83,11 +86,10 @@ end
 def chrome? vsx
   # puts 'chrome?'
   return (vsx.dvrbdr.selected?) &&
-         (vsx.volume.db >= VOLUMES[:mac]) &&
+         (vsx.volume.db >= VOLUMES[:chrome]) &&
          (not vsx.volume.muted?) &&
          (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
 end
-
 
 
 begin
