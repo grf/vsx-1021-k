@@ -10,7 +10,7 @@
 #
 # also:
 #
-# --list          - gives the option (thinking REST server for the future)
+# --list          - gives the lists of options above (thinking REST server for the future)
 
 
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
@@ -117,14 +117,10 @@ begin
   vsx.volume.unmute
 
   case input_device
-  when :roku
-    vsx.bd.select unless roku?(vsx)
-  when :satya
-    vsx.dvd.select unless satya?(vsx)
-  when :mac
-    vsx.dvrbdr.select unless mac?(vsx)
-  when :chrome
-    vsx.video1.select unless chrome?(vsx)
+  when :roku;      vsx.bd.select     unless roku?(vsx)
+  when :satya;     vsx.dvd.select    unless satya?(vsx)
+  when :mac;       vsx.dvrbdr.select unless mac?(vsx)
+  when :chrome     vsx.video1.select unless chrome?(vsx)
   when :wuft
     unless wuft?(vsx)
       vsx.tuner.select
