@@ -17,6 +17,7 @@ $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
 require 'vsx'
 require 'optparse'
 
+# TODO: not sure about these settings;  need to check DB output at several volumes settings...
 
 VOLUMES = { satya: -25, chrome: -25, wuft: -30, roku: -30, mac: -30 }
 
@@ -117,10 +118,10 @@ begin
   vsx.volume.unmute
 
   case input_device
-  when :roku;      vsx.bd.select     unless roku?(vsx)
-  when :satya;     vsx.dvd.select    unless satya?(vsx)
+  when :chrome;    vsx.video1.select unless chrome?(vsx)
   when :mac;       vsx.dvrbdr.select unless mac?(vsx)
-  when :chrome     vsx.video1.select unless chrome?(vsx)
+  when :satya;     vsx.dvd.select    unless satya?(vsx)
+  when :roku;      vsx.bd.select     unless roku?(vsx)
   when :wuft
     unless wuft?(vsx)
       vsx.tuner.select
