@@ -133,7 +133,7 @@ begin
   end
 
   if was_off
-    puts 'sleeping'
+    # puts 'sleeping'
     sleep 5
   end
 
