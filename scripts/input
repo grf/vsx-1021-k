@@ -2,7 +2,7 @@
 
 # This script takes one flag and sets the VSX to set the inputs to one of:
 #
-# --chromecast    - set to VICEO_1
+# --chromecast    - set to VIDEO_1
 # --mac-display   - set to DVR_BDR
 # --roku          - set to BD
 # --satyagraha    - set to DVD
@@ -10,17 +10,17 @@
 #
 # also:
 #
-# --list          - gives the lists of options above (thinking REST server for the future)
-
+# --list          - gives the lists of options above (here I'm thinking REST server for future app use)
 
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
+
 require 'vsx'
 require 'optparse'
 
 # TODO: not sure about these settings;  need to check DB output at several volumes settings...
 
 VOLUMES = { satya: -25, chrome: -25, wuft: -30, roku: -30, mac: -30 }
-
+DEBUG   = false
 
 def usage
   STDERR.puts "Usage: #{$0.sub(/.*\//, '')} [ --chromecast | --mac-display | --roku | --satyagraha | --wuft | --list ]"
@@ -28,7 +28,7 @@ def usage
 end
 
 
-def get_input_device_from_commandline args
+def get_input_device_from_command_line args
   input_device, number_of_arguments = nil, 0
 
   opts   = OptionParser.new do |opt|
@@ -38,16 +38,11 @@ def get_input_device_from_commandline args
     opt.on("--satyagraha",   "set VSX to use server")      { input_device = :satya;  number_of_arguments += 1 }
     opt.on("--wuft",         "set VSX to use WUFT")        { input_device = :wuft;   number_of_arguments += 1 }
 
-    opt.on("--list",         "list available devices")     { input_device = :list;   number_of_arguments += 1 }
+    opt.on("--list",         "list available devices")     { puts "chromecast mac-display roku satyagraha wuft";  exit 0 }
   end
   opts.parse!(args)
 
   usage unless number_of_arguments == 1
-
-  if input_device == :list
-    puts "chromecast mac-display roku satyagraha wuft"
-    exit 0
-  end
 
 rescue => e
   STDERR.puts e, opts
@@ -58,8 +53,39 @@ else
 end
 
 
+def chrome? vsx
+  return (vsx.video1.selected?) &&
+         (vsx.volume.db >= VOLUMES[:chrome]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
+def mac? vsx
+  return (vsx.dvrbdr.selected?) &&
+         (vsx.volume.db >= VOLUMES[:mac]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
+def roku? vsx
+  return (vsx.bd.selected?) &&
+         (vsx.volume.db >= VOLUMES[:roku]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
+def satya? vsx
+  return (vsx.dvd.selected?) &&
+         (vsx.volume.db >= VOLUMES[:satya]) &&
+         (not vsx.volume.muted?) &&
+         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
+end
+
+
 def wuft? vsx
-  # puts 'wuft?'
   return (vsx.tuner.selected?) &&
          (vsx.volume.db >= VOLUMES[:wuft]) &&
          (vsx.listening_mode == Vsx::STEREO_DIRECT_SET) &&
@@ -69,44 +95,8 @@ def wuft? vsx
 end
 
 
-def satya? vsx
-  # puts 'satya?'
-  return (vsx.dvd.selected?) &&
-         (vsx.volume.db >= VOLUMES[:satya]) &&
-         (not vsx.volume.muted?) &&
-         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
-end
-
-
-def roku? vsx
-  # puts 'roku?'
-  return (vsx.bd.selected?) &&
-         (vsx.volume.db >= VOLUMES[:roku]) &&
-         (not vsx.volume.muted?) &&
-         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
-end
-
-
-def mac? vsx
-  # puts 'mac?'
-  return (vsx.dvrbdr.selected?) &&
-         (vsx.volume.db >= VOLUMES[:mac]) &&
-         (not vsx.volume.muted?) &&
-         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
-end
-
-
-def chrome? vsx
-  # puts 'chrome?'
-  return (vsx.video1.selected?) &&
-         (vsx.volume.db >= VOLUMES[:chrome]) &&
-         (not vsx.volume.muted?) &&
-         (vsx.listening_mode == Vsx::STEREO_DIRECT_SET)
-end
-
-
-begin
-  input_device = get_input_device_from_commandline(ARGV)
+def main
+  input_device = get_input_device_from_command_line(ARGV)
 
   vsx = Vsx.new('vsx.sacred.net')
 
@@ -140,7 +130,10 @@ begin
   vsx.volume.fade_in VOLUMES[input_device]
 
 rescue => e
-  puts "Oops: #{e.class}"
-  puts e.message
-  puts e.backtrace
+  STDERR.puts "Oops: #{e.class}" if DEBUG
+  STDERR.puts e.message
+  STDERR.puts e.backtrace if DEBUG
 end
+
+
+main()
