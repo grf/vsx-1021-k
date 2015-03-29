@@ -6,7 +6,7 @@ class Video1Control
     @vsx = vsx
   end
 
-  # Tell the VSX to use the DVD as input; returns true if succesful
+  # Tell the VSX to use 'VIDEO 1' as input; returns true if succesful
 
   def select
     return (@vsx.inputs.selected = 'VIDEO 1')

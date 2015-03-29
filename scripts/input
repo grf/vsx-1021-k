@@ -11,6 +11,18 @@
 # also:
 #
 # --list          - gives the lists of options above (here I'm thinking REST server for future app use)
+#
+# Currently,  my assignments of VSX inputs are as follows:
+#
+#  VSX INPUT     DEVICE
+#  ---------     ------
+#  VIDEO 1       chromecast
+#  DVRBDR        MacBook display
+#  DVD           satyagraha.sacred.net graphics controller
+#  DB            roku
+#  ????          xbox
+#
+#  wuft below uses the TUNER.
 
 $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
 
@@ -26,7 +38,6 @@ def usage
   STDERR.puts "Usage: #{$0.sub(/.*\//, '')} [ --chromecast | --mac-display | --roku | --satyagraha | --wuft | --list ]"
   exit 1
 end
-
 
 def get_input_device_from_command_line args
   input_device, number_of_arguments = nil, 0

@@ -10,9 +10,9 @@ class InputControl
     '03' => 'CD-R/TAPE',
     '04' => 'DVD',
     '05' => 'TV/SAT',
-    '10' => 'Video 1',
+    '10' => 'VIDEO 1',
     '12' => 'MULTI CH IN',     # [1]
-    '14' => 'Video 2',
+    '14' => 'VIDEO 2',
     '15' => 'DVR/BDR',
     '17' => 'iPod/USB',
     '19' => 'HDMI 1',
