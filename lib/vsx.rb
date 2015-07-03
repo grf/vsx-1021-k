@@ -7,11 +7,12 @@
 ### TODO: add command logging
 
 ### TODO: add some design notes - esp. that we never raise on
-### unexpected data, we return nil or empty arrays. Client classes
-### should simply pass these values up the chain - it's up to the
-### application to determine what to do on missing data (this makes
-### sense, since we don't want to accidently turn the volume all the
-### way up and have an exception leave the speakers disintergrating...
+### unexpected data, when we return nil or empty arrays. Client
+### classes should simply pass these values up the chain - it's up to
+### the application to determine what to do on missing data (this
+### makes sense, since we don't want to accidently turn the volume all
+### the way up and have an exception leave the speakers
+### disintegrating...)
 
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), './lib/'))
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '../lib/'))
@@ -28,8 +29,6 @@ require 'dvd-control'        # have the living room server on this input, host s
 require 'video1-control'     # have the chromecast on this input
 require 'bd-control'         # have the Roku on this input
 require 'dvr-bdr-control'    # have the Mac Display on this input
-
-# add one for the MAC Display system
 
 
 class Vsx
@@ -455,8 +454,6 @@ class Vsx
       puts 'Audio: ' + audio_status_report
     end
   end
-
-  # returns one of :off, :on, :unreachable
 
   def on?
     status_helper == :on
