@@ -9,7 +9,7 @@ def usage
   exit -1
 end
 
-hostname = ARGV[0] || 'vsx.zxjinn.com'
+hostname = ARGV[0] || 'vsx.sacred.net'
 
 # usage if hostname.nil?
 # usage unless hostname =~ /.*\..*/  # minimal sanity check for ip octet or name

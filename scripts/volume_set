@@ -5,7 +5,7 @@ $LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
 require 'vsx'
 
 amount = ARGV[0] || -60 # 2 dB by default
-hostname = ARGV[1] || 'vsx.zxjinn.com'
+hostname = ARGV[1] || 'vsx.sacred.net'
 
 begin
   vsx = Vsx.new(hostname)
