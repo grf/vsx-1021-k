@@ -1,0 +1,6 @@
+---
+hostname: 'vsx.sacred.net'
+min_volume: -80
+max_volume: 12
+volume_adjust: 2
+sinatra_port: 4567

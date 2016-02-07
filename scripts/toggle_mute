@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift  File.expand_path(File.dirname(__FILE__) + "/../lib")
+
+require 'vsx'
+
+hostname = ARGV[1] || 'vsx.zxjinn.com'
+
+begin
+  vsx = Vsx.new(hostname)
+  if vsx.off?
+    STDERR.puts 'VSX receiver is off, aborting'
+    exit -1
+  end
+
+  if ! vsx.volume.muted?
+    vsx.volume.mute
+    puts vsx.volume.report
+  else
+    vsx.volume.unmute
+    puts vsx.volume.report
+  end
+
+rescue => e
+  puts "Oops: #{e.class}"
+  puts e.message
+  puts e.backtrace
+end

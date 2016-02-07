@@ -91,7 +91,7 @@ end
 
 error_count = 0
 
-HOSTNAME = "vsx.sacred.net"
+HOSTNAME = ARGV[0] || 'vsx.sacred.net'
 
 begin
   @vsx = TCPSocket::new(HOSTNAME, 23)

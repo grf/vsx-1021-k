@@ -109,7 +109,9 @@ end
 def main
   input_device = get_input_device_from_command_line(ARGV)
 
-  vsx = Vsx.new('vsx.sacred.net')
+  hostname = ARGV[0] || 'vsx.sacred.net'
+
+  vsx = Vsx.new(hostname)
 
   was_off = vsx.off?
   vsx.on
